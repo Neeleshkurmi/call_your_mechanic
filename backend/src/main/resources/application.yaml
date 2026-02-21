@@ -1,3 +1,9 @@
 spring:
   application:
     name: cym
+
+app:
+  auth:
+    otp-expiry-seconds: 300
+    otp-resend-cooldown-seconds: 60
+    otp-max-attempts: 5
