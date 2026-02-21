@@ -10,7 +10,6 @@ import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -31,7 +30,6 @@ public class AuthService {
         this.userRepository = userRepository;
     }
 
-    @Transactional
     public AuthDtos.TokenResponse refresh(AuthDtos.RefreshRequest request) {
         String refreshToken = requireValue(request.refreshToken(), "refreshToken");
 
@@ -67,7 +65,6 @@ public class AuthService {
         );
     }
 
-    @Transactional
     public void logout(AuthDtos.LogoutRequest request) {
         String refreshToken = requireValue(request.refreshToken(), "refreshToken");
 

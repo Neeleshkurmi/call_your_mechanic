@@ -1,0 +1,36 @@
+package com.nilesh.cym.auth.controller;
+
+import com.nilesh.cym.auth.dto.AuthTokenResponseDto;
+import com.nilesh.cym.auth.dto.OtpRequestDto;
+import com.nilesh.cym.auth.dto.OtpVerifyDto;
+import com.nilesh.cym.auth.service.OtpAuthService;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/v1/auth/otp")
+public class AuthController {
+
+    private final OtpAuthService otpAuthService;
+
+    public AuthController(OtpAuthService otpAuthService) {
+        this.otpAuthService = otpAuthService;
+    }
+
+    @PostMapping("/request")
+    public ResponseEntity<Map<String, String>> requestOtp(@Valid @RequestBody OtpRequestDto request) {
+        otpAuthService.requestOtp(request.getMobile());
+        return ResponseEntity.ok(Map.of("message", "OTP sent successfully"));
+    }
+
+    @PostMapping("/verify")
+    public ResponseEntity<AuthTokenResponseDto> verifyOtp(@Valid @RequestBody OtpVerifyDto request) {
+        return ResponseEntity.ok(otpAuthService.verifyOtp(request));
+    }
+}
