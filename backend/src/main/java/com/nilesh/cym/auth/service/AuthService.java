@@ -1,5 +1,6 @@
-package com.nilesh.cym.auth;
+package com.nilesh.cym.auth.service;
 
+import com.nilesh.cym.auth.dto.AuthDtos;
 import com.nilesh.cym.entity.UserEntity;
 import com.nilesh.cym.repository.UserRepository;
 import com.nilesh.cym.token.JwtService;

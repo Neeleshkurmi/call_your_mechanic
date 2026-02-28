@@ -1,5 +1,7 @@
 package com.nilesh.cym.auth.controller;
 
+import com.nilesh.cym.auth.dto.AuthDtos;
+import com.nilesh.cym.auth.service.AuthService;
 import com.nilesh.cym.auth.dto.AuthTokenResponseDto;
 import com.nilesh.cym.auth.dto.OtpRequestDto;
 import com.nilesh.cym.auth.dto.OtpVerifyDto;
@@ -18,9 +20,11 @@ import java.util.Map;
 public class AuthController {
 
     private final OtpAuthService otpAuthService;
+    private final AuthService authService;
 
-    public AuthController(OtpAuthService otpAuthService) {
+    public AuthController(OtpAuthService otpAuthService, AuthService authService) {
         this.otpAuthService = otpAuthService;
+        this.authService = authService;
     }
 
     @PostMapping("/request")
@@ -32,5 +36,16 @@ public class AuthController {
     @PostMapping("/verify")
     public ResponseEntity<AuthTokenResponseDto> verifyOtp(@Valid @RequestBody OtpVerifyDto request) {
         return ResponseEntity.ok(otpAuthService.verifyOtp(request));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthDtos.TokenResponse> refresh(@RequestBody AuthDtos.RefreshRequest request) {
+        return ResponseEntity.ok(authService.refresh(request));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestBody AuthDtos.LogoutRequest request) {
+        authService.logout(request);
+        return ResponseEntity.noContent().build();
     }
 }

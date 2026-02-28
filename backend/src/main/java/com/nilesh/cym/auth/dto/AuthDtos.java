@@ -1,4 +1,4 @@
-package com.nilesh.cym.auth;
+package com.nilesh.cym.auth.dto;
 
 public class AuthDtos {
 
