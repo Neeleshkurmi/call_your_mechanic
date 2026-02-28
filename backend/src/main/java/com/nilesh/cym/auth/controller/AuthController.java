@@ -7,6 +7,7 @@ import com.nilesh.cym.auth.dto.OtpRequestDto;
 import com.nilesh.cym.auth.dto.OtpVerifyDto;
 import com.nilesh.cym.auth.service.OtpAuthService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/auth/otp")
 public class AuthController {
@@ -29,6 +31,7 @@ public class AuthController {
 
     @PostMapping("/request")
     public ResponseEntity<Map<String, String>> requestOtp(@Valid @RequestBody OtpRequestDto request) {
+        log.debug("calling request otp for mobile number", request.getMobile());
         otpAuthService.requestOtp(request.getMobile());
         return ResponseEntity.ok(Map.of("message", "OTP sent successfully"));
     }
