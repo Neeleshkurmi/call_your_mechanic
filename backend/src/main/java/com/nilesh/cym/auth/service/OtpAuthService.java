@@ -19,6 +19,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
+import com.twilio.Twilio;
+import com.twilio.rest.api.v2010.account.Message;
+import com.twilio.type.PhoneNumber;
 
 @Service
 public class OtpAuthService {
@@ -43,6 +46,23 @@ public class OtpAuthService {
         this.authProperties = authProperties;
     }
 
+// ... inside the class ...
+
+    private void sendSmsViaTwilio(String mobile, String otp) {
+        // These should ideally be moved to application.yaml and injected via @Value
+        String accountSid = "YOUR_TWILIO_ACCOUNT_SID";
+        String authToken = "YOUR_TWILIO_AUTH_TOKEN";
+        String fromNumber = "YOUR_TWILIO_PHONE_NUMBER";
+
+        Twilio.init(accountSid, authToken);
+
+        Message.creator(
+                new PhoneNumber(mobile),
+                new PhoneNumber(fromNumber),
+                "Your CYM verification code is: " + otp
+        ).create();
+    }
+
     @Transactional
     public void requestOtp(String mobile) {
         String normalizedMobile = normalizeMobile(mobile);
@@ -59,6 +79,7 @@ public class OtpAuthService {
                 });
 
         String otp = generateOtp();
+        System.out.println("DEBUG: Generated OTP is: " + otp);
         String salt = randomToken(SALT_BYTES);
 
         OtpChallengeEntity challenge = new OtpChallengeEntity();
@@ -71,6 +92,8 @@ public class OtpAuthService {
         challenge.setCooldownUntil(now.plusSeconds(authProperties.getOtpResendCooldownSeconds()));
 
         otpChallengeRepository.save(challenge);
+//
+//        sendSmsViaTwilio(normalizedMobile, otp);
 
         // Integrate SMS provider here without logging OTP in plaintext.
     }
