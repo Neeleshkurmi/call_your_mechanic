@@ -32,22 +32,30 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> requestOtp(@Valid @RequestBody OtpRequestDto request) {
         log.debug("calling request otp for mobile number {}", request.getMobile());
         otpAuthService.requestOtp(request.getMobile());
-        return ResponseEntity.ok(ApiResponse.success("OTP sent successfully"));
+        return successResponse("OTP sent successfully");
     }
 
     @PostMapping("/verify")
     public ResponseEntity<ApiResponse<AuthTokenResponseDto>> verifyOtp(@Valid @RequestBody OtpVerifyDto request) {
-        return ResponseEntity.ok(ApiResponse.success("OTP verified successfully", otpAuthService.verifyOtp(request)));
+        return successResponse("OTP verified successfully", otpAuthService.verifyOtp(request));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<AuthDtos.TokenResponse>> refresh(@RequestBody AuthDtos.RefreshRequest request) {
-        return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully", authService.refresh(request)));
+    public ResponseEntity<ApiResponse<AuthDtos.TokenResponse>> refresh(@Valid @RequestBody AuthDtos.RefreshRequest request) {
+        return successResponse("Token refreshed successfully", authService.refresh(request));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(@RequestBody AuthDtos.LogoutRequest request) {
+    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody AuthDtos.LogoutRequest request) {
         authService.logout(request);
-        return ResponseEntity.ok(ApiResponse.success("Logged out successfully"));
+        return successResponse("Logged out successfully");
+    }
+
+    private ResponseEntity<ApiResponse<Void>> successResponse(String message) {
+        return ResponseEntity.ok(ApiResponse.success(message));
+    }
+
+    private <T> ResponseEntity<ApiResponse<T>> successResponse(String message, T data) {
+        return ResponseEntity.ok(ApiResponse.success(message, data));
     }
 }
