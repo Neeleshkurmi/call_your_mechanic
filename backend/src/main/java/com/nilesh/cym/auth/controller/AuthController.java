@@ -1,11 +1,12 @@
 package com.nilesh.cym.auth.controller;
 
 import com.nilesh.cym.auth.dto.AuthDtos;
-import com.nilesh.cym.auth.service.AuthService;
 import com.nilesh.cym.auth.dto.AuthTokenResponseDto;
 import com.nilesh.cym.auth.dto.OtpRequestDto;
 import com.nilesh.cym.auth.dto.OtpVerifyDto;
+import com.nilesh.cym.auth.service.AuthService;
 import com.nilesh.cym.auth.service.OtpAuthService;
+import com.nilesh.cym.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -13,8 +14,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -30,25 +29,25 @@ public class AuthController {
     }
 
     @PostMapping("/request")
-    public ResponseEntity<Map<String, String>> requestOtp(@Valid @RequestBody OtpRequestDto request) {
-        log.debug("calling request otp for mobile number", request.getMobile());
+    public ResponseEntity<ApiResponse<Void>> requestOtp(@Valid @RequestBody OtpRequestDto request) {
+        log.debug("calling request otp for mobile number {}", request.getMobile());
         otpAuthService.requestOtp(request.getMobile());
-        return ResponseEntity.ok(Map.of("message", "OTP sent successfully"));
+        return ResponseEntity.ok(ApiResponse.success("OTP sent successfully"));
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<AuthTokenResponseDto> verifyOtp(@Valid @RequestBody OtpVerifyDto request) {
-        return ResponseEntity.ok(otpAuthService.verifyOtp(request));
+    public ResponseEntity<ApiResponse<AuthTokenResponseDto>> verifyOtp(@Valid @RequestBody OtpVerifyDto request) {
+        return ResponseEntity.ok(ApiResponse.success("OTP verified successfully", otpAuthService.verifyOtp(request)));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthDtos.TokenResponse> refresh(@RequestBody AuthDtos.RefreshRequest request) {
-        return ResponseEntity.ok(authService.refresh(request));
+    public ResponseEntity<ApiResponse<AuthDtos.TokenResponse>> refresh(@RequestBody AuthDtos.RefreshRequest request) {
+        return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully", authService.refresh(request)));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestBody AuthDtos.LogoutRequest request) {
+    public ResponseEntity<ApiResponse<Void>> logout(@RequestBody AuthDtos.LogoutRequest request) {
         authService.logout(request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success("Logged out successfully"));
     }
 }

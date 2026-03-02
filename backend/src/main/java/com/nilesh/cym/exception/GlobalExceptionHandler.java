@@ -1,5 +1,6 @@
 package com.nilesh.cym.exception;
 
+import com.nilesh.cym.common.dto.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -13,7 +14,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
@@ -21,7 +21,7 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiErrorResponse> handleValidation(
+    public ResponseEntity<ApiResponse<Void>> handleValidation(
             MethodArgumentNotValidException ex,
             HttpServletRequest request
     ) {
@@ -38,7 +38,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ApiErrorResponse> handleConstraintViolation(
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(
             ConstraintViolationException ex,
             HttpServletRequest request
     ) {
@@ -50,7 +50,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<ApiErrorResponse> handleResponseStatus(
+    public ResponseEntity<ApiResponse<Void>> handleResponseStatus(
             ResponseStatusException ex,
             HttpServletRequest request
     ) {
@@ -66,7 +66,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({BadCredentialsException.class, AccessDeniedException.class})
-    public ResponseEntity<ApiErrorResponse> handleSecurity(
+    public ResponseEntity<ApiResponse<Void>> handleSecurity(
             Exception ex,
             HttpServletRequest request
     ) {
@@ -75,7 +75,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiErrorResponse> handleUnhandled(Exception ex, HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<Void>> handleUnhandled(Exception ex, HttpServletRequest request) {
         return buildResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "An unexpected error occurred",
@@ -84,21 +84,14 @@ public class GlobalExceptionHandler {
         );
     }
 
-    private ResponseEntity<ApiErrorResponse> buildResponse(
+    private ResponseEntity<ApiResponse<Void>> buildResponse(
             HttpStatus status,
             String message,
             List<String> details,
             String path
     ) {
-        ApiErrorResponse error = new ApiErrorResponse(
-                Instant.now(),
-                status.value(),
-                status.getReasonPhrase(),
-                message,
-                path,
-                details
-        );
-
+        List<String> errors = details == null || details.isEmpty() ? List.of("path: " + path) : details;
+        ApiResponse<Void> error = ApiResponse.error(message, errors);
         return ResponseEntity.status(status).body(error);
     }
 }
