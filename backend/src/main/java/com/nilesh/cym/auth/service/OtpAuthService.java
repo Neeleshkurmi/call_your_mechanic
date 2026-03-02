@@ -27,13 +27,13 @@ import com.twilio.type.PhoneNumber;
 @Service
 public class OtpAuthService {
 
-    @Value("${authToken}")
+    @Value("${sms.authToken}")
     private String authToken;
 
-    @Value("${fromNumber}")
+    @Value("${sms.fromNumber}")
     private String fromNumber;
 
-    @Value("${accountSid}")
+    @Value("${sms.accountSid}")
     private String accountSid;
 
     private static final int OTP_LENGTH = 6;
@@ -91,7 +91,6 @@ public class OtpAuthService {
                 });
 
         String otp = generateOtp();
-        System.out.println("DEBUG: Generated OTP is: " + otp);
         String salt = randomToken(SALT_BYTES);
 
         OtpChallengeEntity challenge = new OtpChallengeEntity();

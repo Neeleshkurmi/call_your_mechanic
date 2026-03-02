@@ -24,9 +24,9 @@ public class JwtService {
     private final Duration refreshTokenTtl;
 
     public JwtService(
-            @Value("${security.jwt.secret:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}") String secret,
-            @Value("${security.jwt.access-token-ttl:PT15M}") Duration accessTokenTtl,
-            @Value("${security.jwt.refresh-token-ttl:P30D}") Duration refreshTokenTtl
+            @Value("${security.jwt.secret}") String secret,
+            @Value("${security.jwt.access-token-ttl}") Duration accessTokenTtl,
+            @Value("${security.jwt.refresh-token-ttl}") Duration refreshTokenTtl
     ) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessTokenTtl = accessTokenTtl;

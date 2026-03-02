@@ -8,7 +8,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -23,6 +23,14 @@ app:
     otp-max-attempts: 5
 
 # SMS provider
-accountSid: AC50039e27063e1d32436f92a8d04f3780
-authToken:  62bffff16d7beb369fe7d21cba88c715
-fromNumber: +1 507 776 5377
+sms:
+  accountSid: AC50039e27063e1d32436f92a8d04f3780
+  authToken:  62bffff16d7beb369fe7d21cba88c715
+  fromNumber: +1 507 776 5377
+
+
+security:
+  jwt:
+    secret: e0S8JplmeKf5Sq8hJrPdpc3VbH1wVlAbAzzVjlsdhNr
+    access-token-ttl: PT15M
+    refresh-token-ttl: P30D
