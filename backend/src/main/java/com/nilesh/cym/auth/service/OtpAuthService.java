@@ -9,6 +9,7 @@ import com.nilesh.cym.entity.UserEntity;
 import com.nilesh.cym.entity.enums.UserRole;
 import com.nilesh.cym.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -25,6 +26,15 @@ import com.twilio.type.PhoneNumber;
 
 @Service
 public class OtpAuthService {
+
+    @Value("${authToken}")
+    private String authToken;
+
+    @Value("${fromNumber}")
+    private String fromNumber;
+
+    @Value("${accountSid}")
+    private String accountSid;
 
     private static final int OTP_LENGTH = 6;
     private static final int ACCESS_TOKEN_BYTES = 32;
@@ -50,16 +60,18 @@ public class OtpAuthService {
 
     private void sendSmsViaTwilio(String mobile, String otp) {
         // These should ideally be moved to application.yaml and injected via @Value
-        String accountSid = "YOUR_TWILIO_ACCOUNT_SID";
-        String authToken = "YOUR_TWILIO_AUTH_TOKEN";
-        String fromNumber = "YOUR_TWILIO_PHONE_NUMBER";
+
+
+        mobile = "+91" + mobile;
+
+        String message = "Here is your Call Your Mechanic one time password is: " + otp + " don't share it with anyone, Himanshu ko to bilkul mat dena";
 
         Twilio.init(accountSid, authToken);
 
         Message.creator(
                 new PhoneNumber(mobile),
                 new PhoneNumber(fromNumber),
-                "Your CYM verification code is: " + otp
+                message
         ).create();
     }
 
@@ -92,8 +104,8 @@ public class OtpAuthService {
         challenge.setCooldownUntil(now.plusSeconds(authProperties.getOtpResendCooldownSeconds()));
 
         otpChallengeRepository.save(challenge);
-//
-//        sendSmsViaTwilio(normalizedMobile, otp);
+
+        sendSmsViaTwilio(normalizedMobile, otp);
 
         // Integrate SMS provider here without logging OTP in plaintext.
     }

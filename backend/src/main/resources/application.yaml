@@ -21,3 +21,8 @@ app:
     otp-expiry-seconds: 300
     otp-resend-cooldown-seconds: 60
     otp-max-attempts: 5
+
+# SMS provider
+accountSid: AC50039e27063e1d32436f92a8d04f3780
+authToken:  62bffff16d7beb369fe7d21cba88c715
+fromNumber: +1 507 776 5377
