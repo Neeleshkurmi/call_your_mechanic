@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/auth/otp")
+@RequestMapping("/api/v1/auth")
 public class OtpController {
 
     private final OtpAuthService otpAuthService;
@@ -26,14 +26,14 @@ public class OtpController {
         this.otpAuthService = otpAuthService;
     }
 
-    @PostMapping("/request")
+    @PostMapping("/otp/request")
     public ResponseEntity<ApiResponse<Void>> requestOtp(@Valid @RequestBody OtpRequestDto request) {
         log.debug("calling request otp for mobile number {}", request.getMobile());
         otpAuthService.requestOtp(request.getMobile());
         return successResponse("OTP sent successfully");
     }
 
-    @PostMapping("/verify")
+    @PostMapping("/otp/verify")
     public ResponseEntity<ApiResponse<AuthTokenResponseDto>> verifyOtp(@Valid @RequestBody OtpVerifyDto request) {
         return successResponse("OTP verified successfully", otpAuthService.verifyOtp(request));
     }
