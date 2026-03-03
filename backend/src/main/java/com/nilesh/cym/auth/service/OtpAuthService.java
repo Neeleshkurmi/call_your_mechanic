@@ -3,6 +3,7 @@ package com.nilesh.cym.auth.service;
 import com.nilesh.cym.auth.config.AuthProperties;
 import com.nilesh.cym.auth.dto.AuthTokenResponseDto;
 import com.nilesh.cym.auth.dto.OtpVerifyDto;
+import com.nilesh.cym.auth.dto.RoleUpdateRequestDto;
 import com.nilesh.cym.auth.entity.OtpChallengeEntity;
 import com.nilesh.cym.auth.repository.OtpChallengeRepository;
 import com.nilesh.cym.entity.UserEntity;
@@ -158,6 +159,27 @@ public class OtpAuthService {
         response.setMobile(user.getMob());
         response.setRole(user.getRole());
         return response;
+    }
+
+
+    @Transactional
+    public void updateRole(RoleUpdateRequestDto request) {
+        UserRole selectedRole = validateSelectableRole(request.getRole());
+        String normalizedMobile = normalizeMobile(request.getMobile());
+
+        UserEntity user = userRepository.findByMob(normalizedMobile)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        user.setRole(selectedRole);
+        userRepository.save(user);
+    }
+
+    private UserRole validateSelectableRole(UserRole requestedRole) {
+        if (requestedRole == UserRole.USER || requestedRole == UserRole.MECHANIC) {
+            return requestedRole;
+        }
+
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only USER and MECHANIC roles can be selected");
     }
 
     private UserEntity createUser(String mobile, UserRole role) {

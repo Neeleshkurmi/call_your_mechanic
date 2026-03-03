@@ -2,6 +2,7 @@ package com.nilesh.cym.auth.controller;
 
 import com.nilesh.cym.auth.dto.AuthTokenResponseDto;
 import com.nilesh.cym.auth.dto.OtpRequestDto;
+import com.nilesh.cym.auth.dto.RoleUpdateRequestDto;
 import com.nilesh.cym.auth.dto.OtpVerifyDto;
 import com.nilesh.cym.auth.service.AuthService;
 import com.nilesh.cym.auth.service.OtpAuthService;
@@ -35,6 +36,12 @@ public class OtpController {
     @PostMapping("/verify")
     public ResponseEntity<ApiResponse<AuthTokenResponseDto>> verifyOtp(@Valid @RequestBody OtpVerifyDto request) {
         return successResponse("OTP verified successfully", otpAuthService.verifyOtp(request));
+    }
+
+    @PostMapping("/role")
+    public ResponseEntity<ApiResponse<Void>> updateRole(@Valid @RequestBody RoleUpdateRequestDto request) {
+        otpAuthService.updateRole(request);
+        return successResponse("User role updated successfully");
     }
 
     private ResponseEntity<ApiResponse<Void>> successResponse(String message) {
