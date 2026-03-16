@@ -4,6 +4,7 @@ import com.nilesh.cym.auth.dto.AuthDtos;
 import com.nilesh.cym.auth.dto.AuthTokenResponseDto;
 import com.nilesh.cym.booking.dto.BookingResponseDto;
 import com.nilesh.cym.catalog.dto.ServiceResponseDto;
+import com.nilesh.cym.location.dto.LocationResponseDto;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -61,6 +62,17 @@ public final class OpenApiSchemas {
             @Schema(example = "true") boolean success,
             @Schema(example = "User bookings fetched successfully") String message,
             List<BookingResponseDto> data,
+            @ArraySchema(schema = @Schema(example = "[]")) List<String> errors
+    ) {
+    }
+
+
+    @Schema(name = "LocationApiResponse", description = "Standard success response carrying actor location details.")
+    public record LocationApiResponse(
+            @Schema(example = "2026-03-15T12:34:56Z") Instant timestamp,
+            @Schema(example = "true") boolean success,
+            @Schema(example = "Location updated successfully") String message,
+            LocationResponseDto data,
             @ArraySchema(schema = @Schema(example = "[]")) List<String> errors
     ) {
     }
