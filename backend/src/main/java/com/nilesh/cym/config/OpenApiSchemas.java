@@ -2,6 +2,7 @@ package com.nilesh.cym.config;
 
 import com.nilesh.cym.auth.dto.AuthDtos;
 import com.nilesh.cym.auth.dto.AuthTokenResponseDto;
+import com.nilesh.cym.auth.dto.ProfileUpdateResponseDto;
 import com.nilesh.cym.booking.dto.BookingResponseDto;
 import com.nilesh.cym.catalog.dto.ServiceResponseDto;
 import com.nilesh.cym.location.dto.LocationResponseDto;
@@ -42,6 +43,16 @@ public final class OpenApiSchemas {
             @Schema(example = "true") boolean success,
             @Schema(example = "Token refreshed successfully") String message,
             AuthDtos.TokenResponse data,
+            @ArraySchema(schema = @Schema(example = "[]")) List<String> errors
+    ) {
+    }
+
+    @Schema(name = "ProfileUpdateApiResponse", description = "Standard success response carrying updated user details and fresh tokens.")
+    public record ProfileUpdateApiResponse(
+            @Schema(example = "2026-03-15T12:34:56Z") Instant timestamp,
+            @Schema(example = "true") boolean success,
+            @Schema(example = "User profile updated successfully") String message,
+            ProfileUpdateResponseDto data,
             @ArraySchema(schema = @Schema(example = "[]")) List<String> errors
     ) {
     }

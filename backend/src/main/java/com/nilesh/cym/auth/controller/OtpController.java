@@ -3,8 +3,6 @@ package com.nilesh.cym.auth.controller;
 import com.nilesh.cym.auth.dto.AuthTokenResponseDto;
 import com.nilesh.cym.auth.dto.OtpRequestDto;
 import com.nilesh.cym.auth.dto.OtpVerifyDto;
-import com.nilesh.cym.auth.dto.RoleUpdateRequestDto;
-import com.nilesh.cym.auth.service.AuthService;
 import com.nilesh.cym.auth.service.OtpAuthService;
 import com.nilesh.cym.common.dto.ApiResponse;
 import com.nilesh.cym.config.OpenApiSchemas;
@@ -30,7 +28,7 @@ public class OtpController {
 
     private final OtpAuthService otpAuthService;
 
-    public OtpController(OtpAuthService otpAuthService, AuthService authService) {
+    public OtpController(OtpAuthService otpAuthService) {
         this.otpAuthService = otpAuthService;
     }
 
@@ -62,24 +60,6 @@ public class OtpController {
         AuthTokenResponseDto response = otpAuthService.verifyOtp(request);
         log.info("endpoint_success name=verifyOtp userId={} role={}", response.getUserId(), response.getRole());
         return successResponse("OTP verified successfully", response);
-    }
-
-    @PostMapping("/role")
-    @Operation(summary = "Update user role", description = "Updates the role associated with a mobile number.")
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "User role updated successfully", content = @Content(schema = @Schema(implementation = OpenApiSchemas.VoidApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation failed or role update request rejected", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class)))
-    })
-    public ResponseEntity<ApiResponse<Void>> updateRole(@Valid @RequestBody RoleUpdateRequestDto request) {
-        log.info("endpoint_request name=updateRole mobile={} requestedRole={}",
-                LogSanitizer.maskMobile(request.getMobile()),
-                request.getRole());
-        otpAuthService.updateRole(request);
-        log.info("endpoint_success name=updateRole mobile={} requestedRole={}",
-                LogSanitizer.maskMobile(request.getMobile()),
-                request.getRole());
-        return successResponse("User role updated successfully");
     }
 
     private ResponseEntity<ApiResponse<Void>> successResponse(String message) {

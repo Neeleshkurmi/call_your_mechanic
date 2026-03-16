@@ -3,13 +3,15 @@ package com.nilesh.cym.auth.service;
 import com.nilesh.cym.auth.config.AuthProperties;
 import com.nilesh.cym.auth.dto.AuthTokenResponseDto;
 import com.nilesh.cym.auth.dto.OtpVerifyDto;
-import com.nilesh.cym.auth.dto.RoleUpdateRequestDto;
 import com.nilesh.cym.auth.entity.OtpChallengeEntity;
 import com.nilesh.cym.auth.repository.OtpChallengeRepository;
 import com.nilesh.cym.entity.UserEntity;
 import com.nilesh.cym.entity.enums.UserRole;
 import com.nilesh.cym.logging.LogSanitizer;
 import com.nilesh.cym.repository.UserRepository;
+import com.nilesh.cym.token.JwtService;
+import com.nilesh.cym.token.RefreshTokenEntity;
+import com.nilesh.cym.token.RefreshTokenRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +25,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Objects;
+import java.util.UUID;
 import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
@@ -41,22 +45,26 @@ public class OtpAuthService {
     private String accountSid;
 
     private static final int OTP_LENGTH = 6;
-    private static final int ACCESS_TOKEN_BYTES = 32;
-    private static final int REFRESH_TOKEN_BYTES = 48;
     private static final int SALT_BYTES = 16;
 
     private final OtpChallengeRepository otpChallengeRepository;
     private final UserRepository userRepository;
+    private final JwtService jwtService;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final AuthProperties authProperties;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public OtpAuthService(
             OtpChallengeRepository otpChallengeRepository,
             UserRepository userRepository,
+            JwtService jwtService,
+            RefreshTokenRepository refreshTokenRepository,
             AuthProperties authProperties
     ) {
         this.otpChallengeRepository = otpChallengeRepository;
         this.userRepository = userRepository;
+        this.jwtService = jwtService;
+        this.refreshTokenRepository = refreshTokenRepository;
         this.authProperties = authProperties;
     }
 
@@ -194,37 +202,21 @@ public class OtpAuthService {
                 user.getRole(),
                 userRepository.findByMob(normalizedMobile).isPresent());
 
+        JwtService.TokenPair tokenPair = jwtService.issueTokenPair(user, null);
+        refreshTokenRepository.save(buildRefreshTokenEntity(user, tokenPair));
+
         AuthTokenResponseDto response = new AuthTokenResponseDto();
-        response.setAccessToken(randomToken(ACCESS_TOKEN_BYTES));
-        response.setRefreshToken(randomToken(REFRESH_TOKEN_BYTES));
+        response.setAccessToken(tokenPair.accessToken());
+        response.setRefreshToken(tokenPair.refreshToken());
         response.setUserId(user.getId());
         response.setMobile(user.getMob());
         response.setRole(user.getRole());
-        log.info("otp_verify_success mobile={} userId={} role={}",
+        log.info("otp_verify_success mobile={} userId={} role={} refreshJti={}",
                 LogSanitizer.maskMobile(normalizedMobile),
                 user.getId(),
-                user.getRole());
+                user.getRole(),
+                tokenPair.refreshJti());
         return response;
-    }
-
-
-    @Transactional
-    public void updateRole(RoleUpdateRequestDto request) {
-        UserRole selectedRole = validateSelectableRole(request.getRole());
-        String normalizedMobile = normalizeMobile(request.getMobile());
-        log.info("role_update_start mobile={} requestedRole={}",
-                LogSanitizer.maskMobile(normalizedMobile),
-                selectedRole);
-
-        UserEntity user = userRepository.findByMob(normalizedMobile)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-
-        user.setRole(selectedRole);
-        userRepository.save(user);
-        log.info("role_update_success mobile={} userId={} newRole={}",
-                LogSanitizer.maskMobile(normalizedMobile),
-                user.getId(),
-                selectedRole);
     }
 
     private UserRole validateSelectableRole(UserRole requestedRole) {
@@ -247,6 +239,16 @@ public class OtpAuthService {
                 LogSanitizer.maskMobile(saved.getMob()),
                 saved.getRole());
         return saved;
+    }
+
+    private RefreshTokenEntity buildRefreshTokenEntity(UserEntity user, JwtService.TokenPair tokenPair) {
+        RefreshTokenEntity refreshTokenEntity = new RefreshTokenEntity();
+        refreshTokenEntity.setUserId(user.getId());
+        refreshTokenEntity.setTokenJti(tokenPair.refreshJti());
+        refreshTokenEntity.setDeviceSession(Objects.requireNonNullElseGet(tokenPair.deviceSession(), () -> UUID.randomUUID().toString()));
+        refreshTokenEntity.setExpiresAt(tokenPair.refreshExpiresAt());
+        refreshTokenEntity.setRevoked(false);
+        return refreshTokenEntity;
     }
 
     private String generateOtp() {

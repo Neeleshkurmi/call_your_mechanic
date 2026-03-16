@@ -10,4 +10,6 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshTokenEntity
     Optional<RefreshTokenEntity> findByTokenJti(String tokenJti);
 
     Optional<RefreshTokenEntity> findByTokenJtiAndRevokedFalseAndExpiresAtAfter(String tokenJti, Instant now);
+
+    java.util.List<RefreshTokenEntity> findByUserIdAndRevokedFalseAndExpiresAtAfter(Long userId, Instant now);
 }
