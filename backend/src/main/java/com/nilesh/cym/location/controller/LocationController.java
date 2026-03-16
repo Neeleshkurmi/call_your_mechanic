@@ -3,6 +3,7 @@ package com.nilesh.cym.location.controller;
 import com.nilesh.cym.common.dto.ApiResponse;
 import com.nilesh.cym.config.OpenApiConfig;
 import com.nilesh.cym.config.OpenApiSchemas;
+import com.nilesh.cym.location.dto.BookingLocationSnapshotDto;
 import com.nilesh.cym.location.dto.LocationResponseDto;
 import com.nilesh.cym.location.dto.LocationUpdateRequestDto;
 import com.nilesh.cym.location.service.LocationService;
@@ -17,6 +18,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -69,4 +72,24 @@ public class LocationController {
     ) {
         return ResponseEntity.ok(ApiResponse.success("User location updated successfully", locationService.updateUserLocation(authenticatedUser, request)));
     }
+    @GetMapping("/bookings/{bookingId}/location/latest")
+    @Operation(summary = "Get latest booking locations", description = "Returns latest user and mechanic locations for a booking if caller is one of the participants.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Booking locations fetched successfully", content = @Content(schema = @Schema(implementation = OpenApiSchemas.BookingApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication is required", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Authenticated user is not allowed to access this booking", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Mechanic profile not found", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class)))
+    })
+    public ResponseEntity<ApiResponse<BookingLocationSnapshotDto>> getLatestBookingLocation(
+            @PathVariable Long bookingId,
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Booking location snapshot fetched successfully",
+                locationService.getLatestBookingLocation(bookingId, authenticatedUser)
+        ));
+    }
+
 }

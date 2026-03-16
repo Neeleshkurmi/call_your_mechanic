@@ -7,25 +7,20 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.Instant;
 
-@Schema(name = "LocationUpdateRequest", description = "Request payload for updating current actor location coordinates.")
 public record LocationUpdateRequestDto(
         @NotNull
         @DecimalMin(value = "-90.0")
         @DecimalMax(value = "90.0")
-        @Schema(description = "Latitude in decimal degrees.", example = "18.5204", requiredMode = Schema.RequiredMode.REQUIRED)
+        @Schema(description = "Latitude", example = "18.5204", requiredMode = Schema.RequiredMode.REQUIRED)
         Double latitude,
+
         @NotNull
         @DecimalMin(value = "-180.0")
         @DecimalMax(value = "180.0")
-        @Schema(description = "Longitude in decimal degrees.", example = "73.8567", requiredMode = Schema.RequiredMode.REQUIRED)
+        @Schema(description = "Longitude", example = "73.8567", requiredMode = Schema.RequiredMode.REQUIRED)
         Double longitude,
-        @Schema(description = "Optional GPS accuracy in meters.", example = "5.2")
-        Double accuracy,
-        @Schema(description = "Optional speed in meters per second.", example = "12.5")
-        Double speed,
-        @Schema(description = "Optional heading in degrees.", example = "122.7")
-        Double heading,
-        @Schema(description = "Optional client/source timestamp for this location fix.", example = "2026-03-15T12:34:56Z")
+
+        @Schema(description = "Source/client timestamp sent by device.", example = "2026-03-15T12:34:56Z")
         Instant timestamp
 ) {
 }
