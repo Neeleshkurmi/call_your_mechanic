@@ -8,8 +8,10 @@ import com.nilesh.cym.auth.entity.OtpChallengeEntity;
 import com.nilesh.cym.auth.repository.OtpChallengeRepository;
 import com.nilesh.cym.entity.UserEntity;
 import com.nilesh.cym.entity.enums.UserRole;
+import com.nilesh.cym.logging.LogSanitizer;
 import com.nilesh.cym.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,7 @@ import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
 
+@Slf4j
 @Service
 public class OtpAuthService {
 
@@ -66,6 +69,7 @@ public class OtpAuthService {
 //        mobile = "+91" + mobile;
 
         String message = "Here is your Call Your Mechanic one time password is: " + otp + " don't share it with anyone, Himanshu ko to bilkul mat dena";
+        log.info("otp_sms_send_start mobile={}", LogSanitizer.maskMobile(mobile));
 
         Twilio.init(accountSid, authToken);
 
@@ -74,21 +78,29 @@ public class OtpAuthService {
                 new PhoneNumber(fromNumber),
                 message
         ).create();
+        log.info("otp_sms_send_success mobile={}", LogSanitizer.maskMobile(mobile));
     }
 
     @Transactional
     public void requestOtp(String mobile) {
         String normalizedMobile = normalizeMobile(mobile);
         Instant now = Instant.now();
+        log.info("otp_request_start mobile={}", LogSanitizer.maskMobile(normalizedMobile));
 
         otpChallengeRepository.findTopByMobileAndConsumedFalseOrderByCreatedAtDesc(normalizedMobile)
                 .ifPresent(existingChallenge -> {
                     if (now.isBefore(existingChallenge.getCooldownUntil())) {
+                        log.warn("otp_request_rejected mobile={} reason=cooldown_active cooldownUntil={}",
+                                LogSanitizer.maskMobile(normalizedMobile),
+                                existingChallenge.getCooldownUntil());
                         throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "OTP resend cooldown active");
                     }
                     existingChallenge.setConsumed(true);
                     existingChallenge.setConsumedAt(now);
                     otpChallengeRepository.save(existingChallenge);
+                    log.debug("otp_request_previous_challenge_consumed mobile={} challengeId={}",
+                            LogSanitizer.maskMobile(normalizedMobile),
+                            existingChallenge.getId());
                 });
 
         String otp = generateOtp();
@@ -103,9 +115,15 @@ public class OtpAuthService {
         challenge.setExpiresAt(now.plusSeconds(authProperties.getOtpExpirySeconds()));
         challenge.setCooldownUntil(now.plusSeconds(authProperties.getOtpResendCooldownSeconds()));
 
-        otpChallengeRepository.save(challenge);
+        OtpChallengeEntity savedChallenge = otpChallengeRepository.save(challenge);
+        log.debug("otp_request_challenge_created mobile={} challengeId={} expiresAt={} cooldownUntil={}",
+                LogSanitizer.maskMobile(normalizedMobile),
+                savedChallenge.getId(),
+                savedChallenge.getExpiresAt(),
+                savedChallenge.getCooldownUntil());
 
         sendSmsViaTwilio(normalizedMobile, otp);
+        log.info("otp_request_complete mobile={}", LogSanitizer.maskMobile(normalizedMobile));
 
         // Integrate SMS provider here without logging OTP in plaintext.
     }
@@ -114,15 +132,26 @@ public class OtpAuthService {
     public AuthTokenResponseDto verifyOtp(OtpVerifyDto request) {
         String normalizedMobile = normalizeMobile(request.getMobile());
         Instant now = Instant.now();
+        log.info("otp_verify_start mobile={} requestedRole={}",
+                LogSanitizer.maskMobile(normalizedMobile),
+                request.getRole() == null ? UserRole.USER : request.getRole());
 
         OtpChallengeEntity challenge = otpChallengeRepository
                 .findTopByMobileAndConsumedFalseOrderByCreatedAtDesc(normalizedMobile)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "OTP challenge not found"));
+        log.debug("otp_verify_challenge_loaded mobile={} challengeId={} attempts={} expiresAt={}",
+                LogSanitizer.maskMobile(normalizedMobile),
+                challenge.getId(),
+                challenge.getAttempts(),
+                challenge.getExpiresAt());
 
         if (challenge.isConsumed() || now.isAfter(challenge.getExpiresAt())) {
             challenge.setConsumed(true);
             challenge.setConsumedAt(now);
             otpChallengeRepository.save(challenge);
+            log.warn("otp_verify_rejected mobile={} challengeId={} reason=expired_or_consumed",
+                    LogSanitizer.maskMobile(normalizedMobile),
+                    challenge.getId());
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "OTP expired");
         }
 
@@ -130,6 +159,10 @@ public class OtpAuthService {
             challenge.setConsumed(true);
             challenge.setConsumedAt(now);
             otpChallengeRepository.save(challenge);
+            log.warn("otp_verify_rejected mobile={} challengeId={} reason=max_attempts_exceeded attempts={}",
+                    LogSanitizer.maskMobile(normalizedMobile),
+                    challenge.getId(),
+                    challenge.getAttempts());
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Maximum OTP attempts exceeded");
         }
 
@@ -141,6 +174,10 @@ public class OtpAuthService {
                 challenge.setConsumedAt(now);
             }
             otpChallengeRepository.save(challenge);
+            log.warn("otp_verify_rejected mobile={} challengeId={} reason=invalid_otp attempts={}",
+                    LogSanitizer.maskMobile(normalizedMobile),
+                    challenge.getId(),
+                    challenge.getAttempts());
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid OTP");
         }
 
@@ -151,6 +188,11 @@ public class OtpAuthService {
         UserRole desiredRole = request.getRole() == null ? UserRole.USER : request.getRole();
         UserEntity user = userRepository.findByMob(normalizedMobile)
                 .orElseGet(() -> createUser(normalizedMobile, desiredRole));
+        log.debug("otp_verify_user_resolved mobile={} userId={} role={} existingUser={}",
+                LogSanitizer.maskMobile(normalizedMobile),
+                user.getId(),
+                user.getRole(),
+                userRepository.findByMob(normalizedMobile).isPresent());
 
         AuthTokenResponseDto response = new AuthTokenResponseDto();
         response.setAccessToken(randomToken(ACCESS_TOKEN_BYTES));
@@ -158,6 +200,10 @@ public class OtpAuthService {
         response.setUserId(user.getId());
         response.setMobile(user.getMob());
         response.setRole(user.getRole());
+        log.info("otp_verify_success mobile={} userId={} role={}",
+                LogSanitizer.maskMobile(normalizedMobile),
+                user.getId(),
+                user.getRole());
         return response;
     }
 
@@ -166,12 +212,19 @@ public class OtpAuthService {
     public void updateRole(RoleUpdateRequestDto request) {
         UserRole selectedRole = validateSelectableRole(request.getRole());
         String normalizedMobile = normalizeMobile(request.getMobile());
+        log.info("role_update_start mobile={} requestedRole={}",
+                LogSanitizer.maskMobile(normalizedMobile),
+                selectedRole);
 
         UserEntity user = userRepository.findByMob(normalizedMobile)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         user.setRole(selectedRole);
         userRepository.save(user);
+        log.info("role_update_success mobile={} userId={} newRole={}",
+                LogSanitizer.maskMobile(normalizedMobile),
+                user.getId(),
+                selectedRole);
     }
 
     private UserRole validateSelectableRole(UserRole requestedRole) {
@@ -179,6 +232,7 @@ public class OtpAuthService {
             return requestedRole;
         }
 
+        log.warn("role_update_rejected reason=unsupported_role requestedRole={}", requestedRole);
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only USER and MECHANIC roles can be selected");
     }
 
@@ -187,7 +241,12 @@ public class OtpAuthService {
         userEntity.setMob(mobile);
         userEntity.setRole(role);
         userEntity.setName("User " + mobile.substring(Math.max(0, mobile.length() - 4)));
-        return userRepository.save(userEntity);
+        UserEntity saved = userRepository.save(userEntity);
+        log.info("user_created_from_otp userId={} mobile={} role={}",
+                saved.getId(),
+                LogSanitizer.maskMobile(saved.getMob()),
+                saved.getRole());
+        return saved;
     }
 
     private String generateOtp() {

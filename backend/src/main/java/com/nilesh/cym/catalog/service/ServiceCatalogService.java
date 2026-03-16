@@ -4,12 +4,14 @@ import com.nilesh.cym.catalog.dto.ServiceResponseDto;
 import com.nilesh.cym.entity.ServiceEntity;
 import com.nilesh.cym.entity.enums.VehicleType;
 import com.nilesh.cym.repository.ServiceRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+@Slf4j
 @Service
 public class ServiceCatalogService {
 
@@ -20,17 +22,23 @@ public class ServiceCatalogService {
     }
 
     public List<ServiceResponseDto> findServices(VehicleType vehicleType) {
+        log.debug("service_list_start vehicleType={}", vehicleType);
         List<ServiceEntity> services = vehicleType == null
                 ? serviceRepository.findAll()
                 : serviceRepository.findByVehicleType(vehicleType);
 
-        return services.stream().map(this::toResponse).toList();
+        List<ServiceResponseDto> responses = services.stream().map(this::toResponse).toList();
+        log.info("service_list_success vehicleType={} serviceCount={}", vehicleType, responses.size());
+        return responses;
     }
 
     public ServiceResponseDto findServiceById(Long serviceId) {
+        log.debug("service_fetch_start serviceId={}", serviceId);
         ServiceEntity service = serviceRepository.findById(serviceId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found"));
-        return toResponse(service);
+        ServiceResponseDto response = toResponse(service);
+        log.info("service_fetch_success serviceId={} vehicleType={}", response.id(), response.vehicleType());
+        return response;
     }
 
     private ServiceResponseDto toResponse(ServiceEntity entity) {
