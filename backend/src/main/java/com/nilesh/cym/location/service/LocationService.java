@@ -13,6 +13,7 @@ import com.nilesh.cym.location.dto.LocationUpdateRequestDto;
 import com.nilesh.cym.location.realtime.LocationBroadcastEvent;
 import com.nilesh.cym.location.realtime.LocationEventPublisher;
 import com.nilesh.cym.location.realtime.LocationStreamService;
+import com.nilesh.cym.logging.LogSanitizer;
 import com.nilesh.cym.repository.BookingRepository;
 import com.nilesh.cym.repository.MechanicLocationRepository;
 import com.nilesh.cym.repository.MechanicRepository;
@@ -82,7 +83,7 @@ public class LocationService {
         bookingRepository.findByMechanic_IdAndStatusInOrderByBookingTimeDesc(mechanic.getId(), TRACKABLE_STATUSES)
                 .forEach(booking -> publishForBooking(booking, "MECHANIC", mechanic.getId(), saved.getLatitude(), saved.getLongitude(), saved.getRecordedAt()));
 
-        return new LocationResponseDto(
+        LocationResponseDto response = new LocationResponseDto(
                 mechanic.getId(),
                 saved.getLatitude(),
                 saved.getLongitude(),
@@ -115,7 +116,7 @@ public class LocationService {
         bookingRepository.findByUser_IdAndStatusInOrderByBookingTimeDesc(user.getId(), TRACKABLE_STATUSES)
                 .forEach(booking -> publishForBooking(booking, "USER", user.getId(), saved.getLatitude(), saved.getLongitude(), saved.getCreatedAt()));
 
-        return new LocationResponseDto(
+        LocationResponseDto response =  new LocationResponseDto(
                 user.getId(),
                 saved.getLatitude(),
                 saved.getLongitude(),
