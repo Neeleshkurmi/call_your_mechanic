@@ -33,7 +33,7 @@ public class VehicleEntity extends AuditableEntity {
     @Column(nullable = false, length = 80)
     private String model;
 
-    @Column(name = "registration_number", nullable = false, length = 30, unique = true)
+    @Column(name = "registration_number", length = 30, unique = true)
     private String registrationNumber;
 
     public UserEntity getUser() {

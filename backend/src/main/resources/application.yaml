@@ -14,11 +14,12 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     show-sql: true
-  sql:
-    init:
-      mode: always
-  devtools:
-    add-properties: false
+
+#  sql:
+#    init:
+#      mode: always
+#  devtools:
+#    add-properties: false
 
 
   data:
@@ -50,5 +51,5 @@ sms:
 security:
   jwt:
     secret: e0S8JplmeKf5Sq8hJrPdpc3VbH1wVlAbAzzVjlsdhNr
-    access-token-ttl: PT15M
+    access-token-ttl: PT2H
     refresh-token-ttl: P30D
