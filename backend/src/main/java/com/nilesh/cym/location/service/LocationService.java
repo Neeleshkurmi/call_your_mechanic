@@ -19,6 +19,7 @@ import com.nilesh.cym.repository.MechanicRepository;
 import com.nilesh.cym.repository.UserLocationRepository;
 import com.nilesh.cym.repository.UserRepository;
 import com.nilesh.cym.token.AuthenticatedUser;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -26,6 +27,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
+@Slf4j
 @Service
 public class LocationService {
 
@@ -61,6 +63,10 @@ public class LocationService {
     }
 
     public LocationResponseDto updateMechanicLocation(AuthenticatedUser authenticatedUser, LocationUpdateRequestDto request) {
+        log.debug("location_mechanic_update_start principal={} lat={} lon={}",
+                LogSanitizer.summarizePrincipal(authenticatedUser),
+                request.latitude(),
+                request.longitude());
         requireRole(authenticatedUser, UserRole.MECHANIC);
 
         MechanicEntity mechanic = mechanicRepository.findByUser_Id(authenticatedUser.userId())
@@ -83,9 +89,15 @@ public class LocationService {
                 saved.getRecordedAt(),
                 request.timestamp()
         );
+        log.info("location_mechanic_update_success mechanicId={} recordedAt={}", response.actorId(), response.serverTimestamp());
+        return response;
     }
 
     public LocationResponseDto updateUserLocation(AuthenticatedUser authenticatedUser, LocationUpdateRequestDto request) {
+        log.debug("location_user_update_start principal={} lat={} lon={}",
+                LogSanitizer.summarizePrincipal(authenticatedUser),
+                request.latitude(),
+                request.longitude());
         requireRole(authenticatedUser, UserRole.USER);
 
         UserEntity user = userRepository.findById(authenticatedUser.userId())
@@ -110,6 +122,8 @@ public class LocationService {
                 saved.getCreatedAt(),
                 request.timestamp()
         );
+        log.info("location_user_update_success userId={} createdAt={}", response.actorId(), response.serverTimestamp());
+        return response;
     }
 
     public BookingLocationSnapshotDto getLatestBookingLocation(Long bookingId, AuthenticatedUser authenticatedUser) {
@@ -177,6 +191,9 @@ public class LocationService {
 
     private void requireRole(AuthenticatedUser authenticatedUser, UserRole requiredRole) {
         if (authenticatedUser == null || authenticatedUser.role() != requiredRole) {
+            log.warn("location_role_rejected principal={} requiredRole={}",
+                    LogSanitizer.summarizePrincipal(authenticatedUser),
+                    requiredRole);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient role to access this resource");
         }
     }

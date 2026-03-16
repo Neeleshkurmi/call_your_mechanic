@@ -37,7 +37,12 @@ public class SessionController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class)))
     })
     public ResponseEntity<ApiResponse<AuthDtos.TokenResponse>> refresh(@Valid @RequestBody AuthDtos.RefreshRequest request) {
-        return successResponse("Token refreshed successfully", authService.refresh(request));
+        log.info("endpoint_request name=refresh deviceSessionProvided={}", request.deviceSession() != null && !request.deviceSession().isBlank());
+        AuthDtos.TokenResponse response = authService.refresh(request);
+        log.info("endpoint_success name=refresh accessExpiresAt={} refreshExpiresAt={}",
+                response.accessTokenExpiresAt(),
+                response.refreshTokenExpiresAt());
+        return successResponse("Token refreshed successfully", response);
     }
 
     @PostMapping("/logout")
@@ -51,7 +56,9 @@ public class SessionController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class)))
     })
     public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody AuthDtos.LogoutRequest request) {
+        log.info("endpoint_request name=logout");
         authService.logout(request);
+        log.info("endpoint_success name=logout");
         return successResponse("Logged out successfully");
     }
 

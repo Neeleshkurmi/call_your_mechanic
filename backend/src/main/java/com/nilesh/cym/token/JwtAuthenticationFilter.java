@@ -1,5 +1,6 @@
 package com.nilesh.cym.token;
 
+import com.nilesh.cym.logging.LogSanitizer;
 import com.nilesh.cym.entity.enums.UserRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -8,6 +9,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,6 +21,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
+@Slf4j
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -35,15 +38,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (authorization == null || !authorization.startsWith(BEARER_PREFIX)) {
+            log.debug("auth_skip method={} path={} reason=no_bearer_token", request.getMethod(), request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }
 
         String token = authorization.substring(BEARER_PREFIX.length()).trim();
+        log.debug("auth_attempt method={} path={} tokenPresent=true", request.getMethod(), request.getRequestURI());
 
         try {
             Jws<Claims> claimsJws = jwtService.parse(token);
             if (jwtService.isRefreshToken(claimsJws)) {
+                log.warn("auth_rejected method={} path={} reason=refresh_token_used_as_access", request.getMethod(), request.getRequestURI());
                 unauthorized(response, "Refresh token cannot be used for authorization");
                 return;
             }
@@ -61,9 +67,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             );
 
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            log.info("auth_success method={} path={} principal={}",
+                    request.getMethod(),
+                    request.getRequestURI(),
+                    LogSanitizer.summarizePrincipal(principal));
             filterChain.doFilter(request, response);
         } catch (JwtException | IllegalArgumentException ex) {
             SecurityContextHolder.clearContext();
+            log.warn("auth_failed method={} path={} reason={}",
+                    request.getMethod(),
+                    request.getRequestURI(),
+                    ex.getClass().getSimpleName());
             unauthorized(response, "Invalid or expired access token");
         }
     }

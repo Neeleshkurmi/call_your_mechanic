@@ -8,6 +8,7 @@ import com.nilesh.cym.auth.service.AuthService;
 import com.nilesh.cym.auth.service.OtpAuthService;
 import com.nilesh.cym.common.dto.ApiResponse;
 import com.nilesh.cym.config.OpenApiSchemas;
+import com.nilesh.cym.logging.LogSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -41,8 +42,9 @@ public class OtpController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class)))
     })
     public ResponseEntity<ApiResponse<Void>> requestOtp(@Valid @RequestBody OtpRequestDto request) {
-        log.debug("calling request otp for mobile number {}", request.getMobile());
+        log.info("endpoint_request name=requestOtp mobile={}", LogSanitizer.maskMobile(request.getMobile()));
         otpAuthService.requestOtp(request.getMobile());
+        log.info("endpoint_success name=requestOtp mobile={}", LogSanitizer.maskMobile(request.getMobile()));
         return successResponse("OTP sent successfully");
     }
 
@@ -54,7 +56,12 @@ public class OtpController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class)))
     })
     public ResponseEntity<ApiResponse<AuthTokenResponseDto>> verifyOtp(@Valid @RequestBody OtpVerifyDto request) {
-        return successResponse("OTP verified successfully", otpAuthService.verifyOtp(request));
+        log.info("endpoint_request name=verifyOtp mobile={} requestedRole={}",
+                LogSanitizer.maskMobile(request.getMobile()),
+                request.getRole());
+        AuthTokenResponseDto response = otpAuthService.verifyOtp(request);
+        log.info("endpoint_success name=verifyOtp userId={} role={}", response.getUserId(), response.getRole());
+        return successResponse("OTP verified successfully", response);
     }
 
     @PostMapping("/role")
@@ -65,7 +72,13 @@ public class OtpController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class)))
     })
     public ResponseEntity<ApiResponse<Void>> updateRole(@Valid @RequestBody RoleUpdateRequestDto request) {
+        log.info("endpoint_request name=updateRole mobile={} requestedRole={}",
+                LogSanitizer.maskMobile(request.getMobile()),
+                request.getRole());
         otpAuthService.updateRole(request);
+        log.info("endpoint_success name=updateRole mobile={} requestedRole={}",
+                LogSanitizer.maskMobile(request.getMobile()),
+                request.getRole());
         return successResponse("User role updated successfully");
     }
 

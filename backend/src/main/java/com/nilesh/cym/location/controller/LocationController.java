@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1")
 @Tag(name = "Locations", description = "Protected location update endpoints for users and mechanics.")
@@ -54,7 +55,16 @@ public class LocationController {
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @Valid @RequestBody LocationUpdateRequestDto request
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Mechanic location updated successfully", locationService.updateMechanicLocation(authenticatedUser, request)));
+        log.info("endpoint_request name=updateMechanicLocation principal={} lat={} lon={} hasTimestamp={}",
+                LogSanitizer.summarizePrincipal(authenticatedUser),
+                request.latitude(),
+                request.longitude(),
+                request.timestamp() != null);
+        LocationResponseDto response = locationService.updateMechanicLocation(authenticatedUser, request);
+        log.info("endpoint_success name=updateMechanicLocation actorId={} serverTimestamp={}",
+                response.actorId(),
+                response.serverTimestamp());
+        return ResponseEntity.ok(ApiResponse.success("Mechanic location updated successfully", response));
     }
 
     @PostMapping("/users/me/location")
@@ -72,7 +82,16 @@ public class LocationController {
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @Valid @RequestBody LocationUpdateRequestDto request
     ) {
-        return ResponseEntity.ok(ApiResponse.success("User location updated successfully", locationService.updateUserLocation(authenticatedUser, request)));
+        log.info("endpoint_request name=updateUserLocation principal={} lat={} lon={} hasTimestamp={}",
+                LogSanitizer.summarizePrincipal(authenticatedUser),
+                request.latitude(),
+                request.longitude(),
+                request.timestamp() != null);
+        LocationResponseDto response = locationService.updateUserLocation(authenticatedUser, request);
+        log.info("endpoint_success name=updateUserLocation actorId={} serverTimestamp={}",
+                response.actorId(),
+                response.serverTimestamp());
+        return ResponseEntity.ok(ApiResponse.success("User location updated successfully", response));
     }
 
     @GetMapping("/bookings/{bookingId}/location/latest")

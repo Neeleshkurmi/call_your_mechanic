@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/services")
 @Tag(name = "Services", description = "Public service catalog lookup endpoints.")
@@ -42,7 +44,10 @@ public class ServiceCatalogController {
             @Parameter(description = "Optional vehicle type used to filter services.", example = "BIKE")
             @RequestParam(required = false) VehicleType vehicleType
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Services fetched successfully", serviceCatalogService.findServices(vehicleType)));
+        log.info("endpoint_request name=listServices vehicleType={}", vehicleType);
+        List<ServiceResponseDto> responses = serviceCatalogService.findServices(vehicleType);
+        log.info("endpoint_success name=listServices serviceCount={}", responses.size());
+        return ResponseEntity.ok(ApiResponse.success("Services fetched successfully", responses));
     }
 
     @GetMapping("/{serviceId}")
@@ -53,6 +58,9 @@ public class ServiceCatalogController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class)))
     })
     public ResponseEntity<ApiResponse<ServiceResponseDto>> getServiceById(@PathVariable Long serviceId) {
-        return ResponseEntity.ok(ApiResponse.success("Service fetched successfully", serviceCatalogService.findServiceById(serviceId)));
+        log.info("endpoint_request name=getServiceById serviceId={}", serviceId);
+        ServiceResponseDto response = serviceCatalogService.findServiceById(serviceId);
+        log.info("endpoint_success name=getServiceById serviceId={} vehicleType={}", response.id(), response.vehicleType());
+        return ResponseEntity.ok(ApiResponse.success("Service fetched successfully", response));
     }
 }

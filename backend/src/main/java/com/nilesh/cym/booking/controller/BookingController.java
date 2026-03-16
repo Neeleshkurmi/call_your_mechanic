@@ -6,6 +6,7 @@ import com.nilesh.cym.booking.service.BookingService;
 import com.nilesh.cym.common.dto.ApiResponse;
 import com.nilesh.cym.config.OpenApiConfig;
 import com.nilesh.cym.config.OpenApiSchemas;
+import com.nilesh.cym.logging.LogSanitizer;
 import com.nilesh.cym.token.AuthenticatedUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1")
 @Tag(name = "Bookings", description = "Protected booking management endpoints for users and mechanics.")
@@ -53,7 +56,14 @@ public class BookingController {
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @Valid @RequestBody CreateBookingRequestDto request
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Booking created successfully", bookingService.createBooking(authenticatedUser, request)));
+        log.info("endpoint_request name=createBooking principal={} mechanicId={} vehicleId={} serviceId={}",
+                LogSanitizer.summarizePrincipal(authenticatedUser),
+                request.mechanicId(),
+                request.vehicleId(),
+                request.serviceId());
+        BookingResponseDto response = bookingService.createBooking(authenticatedUser, request);
+        log.info("endpoint_success name=createBooking bookingId={} status={}", response.bookingId(), response.status());
+        return ResponseEntity.ok(ApiResponse.success("Booking created successfully", response));
     }
 
     @GetMapping("/bookings/{bookingId}")
@@ -66,7 +76,10 @@ public class BookingController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class)))
     })
     public ResponseEntity<ApiResponse<BookingResponseDto>> getBooking(@PathVariable Long bookingId) {
-        return ResponseEntity.ok(ApiResponse.success("Booking fetched successfully", bookingService.getBooking(bookingId)));
+        log.info("endpoint_request name=getBooking bookingId={}", bookingId);
+        BookingResponseDto response = bookingService.getBooking(bookingId);
+        log.info("endpoint_success name=getBooking bookingId={} status={}", response.bookingId(), response.status());
+        return ResponseEntity.ok(ApiResponse.success("Booking fetched successfully", response));
     }
 
     @GetMapping("/users/me/bookings")
@@ -81,7 +94,10 @@ public class BookingController {
             @Parameter(hidden = true)
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
-        return ResponseEntity.ok(ApiResponse.success("User bookings fetched successfully", bookingService.getUserBookings(authenticatedUser)));
+        log.info("endpoint_request name=getUserBookings principal={}", LogSanitizer.summarizePrincipal(authenticatedUser));
+        List<BookingResponseDto> responses = bookingService.getUserBookings(authenticatedUser);
+        log.info("endpoint_success name=getUserBookings bookingCount={}", responses.size());
+        return ResponseEntity.ok(ApiResponse.success("User bookings fetched successfully", responses));
     }
 
     @GetMapping("/mechanics/me/bookings")
@@ -96,7 +112,10 @@ public class BookingController {
             @Parameter(hidden = true)
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Mechanic bookings fetched successfully", bookingService.getMechanicBookings(authenticatedUser)));
+        log.info("endpoint_request name=getMechanicBookings principal={}", LogSanitizer.summarizePrincipal(authenticatedUser));
+        List<BookingResponseDto> responses = bookingService.getMechanicBookings(authenticatedUser);
+        log.info("endpoint_success name=getMechanicBookings bookingCount={}", responses.size());
+        return ResponseEntity.ok(ApiResponse.success("Mechanic bookings fetched successfully", responses));
     }
 
     @PatchMapping("/bookings/{bookingId}/accept")
@@ -113,7 +132,12 @@ public class BookingController {
             @Parameter(hidden = true)
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Booking accepted successfully", bookingService.acceptBooking(bookingId, authenticatedUser)));
+        log.info("endpoint_request name=acceptBooking bookingId={} principal={}",
+                bookingId,
+                LogSanitizer.summarizePrincipal(authenticatedUser));
+        BookingResponseDto response = bookingService.acceptBooking(bookingId, authenticatedUser);
+        log.info("endpoint_success name=acceptBooking bookingId={} status={}", response.bookingId(), response.status());
+        return ResponseEntity.ok(ApiResponse.success("Booking accepted successfully", response));
     }
 
     @PatchMapping("/bookings/{bookingId}/reject")
@@ -130,6 +154,11 @@ public class BookingController {
             @Parameter(hidden = true)
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Booking rejected successfully", bookingService.rejectBooking(bookingId, authenticatedUser)));
+        log.info("endpoint_request name=rejectBooking bookingId={} principal={}",
+                bookingId,
+                LogSanitizer.summarizePrincipal(authenticatedUser));
+        BookingResponseDto response = bookingService.rejectBooking(bookingId, authenticatedUser);
+        log.info("endpoint_success name=rejectBooking bookingId={} status={}", response.bookingId(), response.status());
+        return ResponseEntity.ok(ApiResponse.success("Booking rejected successfully", response));
     }
 }
