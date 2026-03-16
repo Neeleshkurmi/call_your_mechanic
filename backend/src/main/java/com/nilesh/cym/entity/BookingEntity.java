@@ -45,10 +45,10 @@ public class BookingEntity extends AuditableEntity {
     private Instant bookingTime;
 
     @Column(nullable = false)
-    private Double latitude;
+    private Double latitude; // Initial service point latitude captured at booking creation.
 
     @Column(nullable = false)
-    private Double longitude;
+    private Double longitude; // Initial service point longitude captured at booking creation.
 
     public MechanicEntity getMechanic() {
         return mechanic;

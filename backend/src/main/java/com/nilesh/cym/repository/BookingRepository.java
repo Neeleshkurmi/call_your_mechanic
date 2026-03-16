@@ -3,6 +3,8 @@ package com.nilesh.cym.repository;
 import com.nilesh.cym.entity.BookingEntity;
 import com.nilesh.cym.entity.enums.BookingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,4 +21,14 @@ public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
     Optional<BookingEntity> findByIdAndUser_Id(Long bookingId, Long userId);
 
     Optional<BookingEntity> findByIdAndMechanic_Id(Long bookingId, Long mechanicId);
+
+    @Query("""
+            select b
+            from BookingEntity b
+            join fetch b.user bu
+            join fetch b.mechanic bm
+            join fetch bm.user mu
+            where b.id = :bookingId
+            """)
+    Optional<BookingEntity> findWithParticipantsById(@Param("bookingId") Long bookingId);
 }

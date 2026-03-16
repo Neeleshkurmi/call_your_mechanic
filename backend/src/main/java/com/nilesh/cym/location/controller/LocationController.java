@@ -3,6 +3,7 @@ package com.nilesh.cym.location.controller;
 import com.nilesh.cym.common.dto.ApiResponse;
 import com.nilesh.cym.config.OpenApiConfig;
 import com.nilesh.cym.config.OpenApiSchemas;
+import com.nilesh.cym.location.dto.BookingLocationHistoryDto;
 import com.nilesh.cym.location.dto.BookingLocationSnapshotDto;
 import com.nilesh.cym.location.dto.LocationResponseDto;
 import com.nilesh.cym.location.dto.LocationUpdateRequestDto;
@@ -22,8 +23,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -113,6 +116,22 @@ public class LocationController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Booking location snapshot fetched successfully",
                 locationService.getLatestBookingLocation(bookingId, authenticatedUser)
+        ));
+    }
+
+
+    @GetMapping("/bookings/{bookingId}/location/history")
+    @Operation(summary = "Get booking location history", description = "Returns user and mechanic location history after the given timestamp for a booking if caller is one of the participants.")
+    public ResponseEntity<ApiResponse<BookingLocationHistoryDto>> getBookingLocationHistory(
+            @PathVariable Long bookingId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) java.time.Instant since,
+            @RequestParam(required = false) Integer limit,
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Booking location history fetched successfully",
+                locationService.getBookingLocationHistory(bookingId, authenticatedUser, since, limit)
         ));
     }
 
