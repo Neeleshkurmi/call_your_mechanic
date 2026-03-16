@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -72,6 +74,7 @@ public class LocationController {
     ) {
         return ResponseEntity.ok(ApiResponse.success("User location updated successfully", locationService.updateUserLocation(authenticatedUser, request)));
     }
+
     @GetMapping("/bookings/{bookingId}/location/latest")
     @Operation(summary = "Get latest booking locations", description = "Returns latest user and mechanic locations for a booking if caller is one of the participants.")
     @ApiResponses({
@@ -92,4 +95,13 @@ public class LocationController {
         ));
     }
 
+    @GetMapping(path = "/bookings/{bookingId}/location/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Stream booking locations", description = "Streams booking location updates for the authenticated booking participant using Server-Sent Events.")
+    public SseEmitter streamBookingLocation(
+            @PathVariable Long bookingId,
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        return locationService.subscribeBookingLocationStream(bookingId, authenticatedUser);
+    }
 }

@@ -40,7 +40,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
-                    auth.requestMatchers("/api/v1/auth/**", "/swagger-ui/index.html").permitAll();
+                    auth.requestMatchers("/api/v1/auth/**", "/swagger-ui/index.html", "/ws/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/v1/services/**").permitAll();
 
                     if (apiDocsEnabled || swaggerUiEnabled) {
@@ -60,7 +60,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://10.0.2.2:*",
                 "http://localhost:*",
-                "http://localhost:8081/",
+                "http://localhost:8081",
                 "http://127.0.0.1:*"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

@@ -12,6 +12,7 @@ import com.nilesh.cym.location.dto.LocationResponseDto;
 import com.nilesh.cym.location.dto.LocationUpdateRequestDto;
 import com.nilesh.cym.location.realtime.LocationBroadcastEvent;
 import com.nilesh.cym.location.realtime.LocationEventPublisher;
+import com.nilesh.cym.location.realtime.LocationStreamService;
 import com.nilesh.cym.repository.BookingRepository;
 import com.nilesh.cym.repository.MechanicLocationRepository;
 import com.nilesh.cym.repository.MechanicRepository;
@@ -21,6 +22,7 @@ import com.nilesh.cym.token.AuthenticatedUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -29,8 +31,7 @@ public class LocationService {
 
     private static final List<BookingStatus> TRACKABLE_STATUSES = List.of(
             BookingStatus.REQUESTED,
-            BookingStatus.ACCEPTED,
-            BookingStatus.IN_PROGRESS
+            BookingStatus.ACCEPTED
     );
 
     private final MechanicRepository mechanicRepository;
@@ -39,6 +40,7 @@ public class LocationService {
     private final UserLocationRepository userLocationRepository;
     private final BookingRepository bookingRepository;
     private final LocationEventPublisher locationEventPublisher;
+    private final LocationStreamService locationStreamService;
 
     public LocationService(
             MechanicRepository mechanicRepository,
@@ -46,7 +48,8 @@ public class LocationService {
             MechanicLocationRepository mechanicLocationRepository,
             UserLocationRepository userLocationRepository,
             BookingRepository bookingRepository,
-            LocationEventPublisher locationEventPublisher
+            LocationEventPublisher locationEventPublisher,
+            LocationStreamService locationStreamService
     ) {
         this.mechanicRepository = mechanicRepository;
         this.userRepository = userRepository;
@@ -54,6 +57,7 @@ public class LocationService {
         this.userLocationRepository = userLocationRepository;
         this.bookingRepository = bookingRepository;
         this.locationEventPublisher = locationEventPublisher;
+        this.locationStreamService = locationStreamService;
     }
 
     public LocationResponseDto updateMechanicLocation(AuthenticatedUser authenticatedUser, LocationUpdateRequestDto request) {
@@ -132,6 +136,12 @@ public class LocationService {
                 .orElse(null);
 
         return new BookingLocationSnapshotDto(booking.getId(), userLocation, mechanicLocation);
+    }
+
+
+    public SseEmitter subscribeBookingLocationStream(Long bookingId, AuthenticatedUser authenticatedUser) {
+        findAuthorizedBooking(bookingId, authenticatedUser);
+        return locationStreamService.subscribe(bookingId);
     }
 
     private BookingEntity findAuthorizedBooking(Long bookingId, AuthenticatedUser authenticatedUser) {
