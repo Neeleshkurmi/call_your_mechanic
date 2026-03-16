@@ -3,7 +3,14 @@ package com.nilesh.cym.catalog.controller;
 import com.nilesh.cym.catalog.dto.ServiceResponseDto;
 import com.nilesh.cym.catalog.service.ServiceCatalogService;
 import com.nilesh.cym.common.dto.ApiResponse;
+import com.nilesh.cym.config.OpenApiSchemas;
 import com.nilesh.cym.entity.enums.VehicleType;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,6 +22,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/services")
+@Tag(name = "Services", description = "Public service catalog lookup endpoints.")
 public class ServiceCatalogController {
 
     private final ServiceCatalogService serviceCatalogService;
@@ -24,13 +32,26 @@ public class ServiceCatalogController {
     }
 
     @GetMapping
+    @Operation(summary = "List services", description = "Returns service catalog entries, optionally filtered by vehicle type.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Services fetched successfully", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ServiceListApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Vehicle type filter is invalid", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class)))
+    })
     public ResponseEntity<ApiResponse<List<ServiceResponseDto>>> listServices(
+            @Parameter(description = "Optional vehicle type used to filter services.", example = "BIKE")
             @RequestParam(required = false) VehicleType vehicleType
     ) {
         return ResponseEntity.ok(ApiResponse.success("Services fetched successfully", serviceCatalogService.findServices(vehicleType)));
     }
 
     @GetMapping("/{serviceId}")
+    @Operation(summary = "Get service by id", description = "Returns a service catalog item by its identifier.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Service fetched successfully", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ServiceApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Service not found", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class)))
+    })
     public ResponseEntity<ApiResponse<ServiceResponseDto>> getServiceById(@PathVariable Long serviceId) {
         return ResponseEntity.ok(ApiResponse.success("Service fetched successfully", serviceCatalogService.findServiceById(serviceId)));
     }

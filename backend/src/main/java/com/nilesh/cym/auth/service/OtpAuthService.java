@@ -63,7 +63,7 @@ public class OtpAuthService {
         // These should ideally be moved to application.yaml and injected via @Value
 
 
-        mobile = "+91" + mobile;
+//        mobile = "+91" + mobile;
 
         String message = "Here is your Call Your Mechanic one time password is: " + otp + " don't share it with anyone, Himanshu ko to bilkul mat dena";
 

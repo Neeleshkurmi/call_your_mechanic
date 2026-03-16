@@ -1,18 +1,20 @@
 package com.nilesh.cym.booking.dto;
 
 import com.nilesh.cym.entity.enums.BookingStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
 
+@Schema(name = "BookingResponse", description = "Booking details returned by booking management endpoints.")
 public record BookingResponseDto(
-        Long bookingId,
-        Long userId,
-        Long mechanicId,
-        Long vehicleId,
-        Long serviceId,
-        BookingStatus status,
-        Instant bookingTime,
-        Double latitude,
-        Double longitude
+        @Schema(description = "Unique booking identifier.", example = "101") Long bookingId,
+        @Schema(description = "User who created the booking.", example = "42") Long userId,
+        @Schema(description = "Mechanic assigned to the booking.", example = "12") Long mechanicId,
+        @Schema(description = "Vehicle associated with the booking.", example = "18") Long vehicleId,
+        @Schema(description = "Service requested for the booking.", example = "4") Long serviceId,
+        @Schema(description = "Current lifecycle status of the booking.", example = "REQUESTED") BookingStatus status,
+        @Schema(description = "Timestamp when the booking was created.", example = "2026-03-15T12:34:56Z") Instant bookingTime,
+        @Schema(description = "Latitude of the requested service location.", example = "18.5204") Double latitude,
+        @Schema(description = "Longitude of the requested service location.", example = "73.8567") Double longitude
 ) {
 }
