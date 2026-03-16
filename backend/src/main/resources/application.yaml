@@ -20,6 +20,12 @@ spring:
   devtools:
     add-properties: false
 
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
 springdoc:
   api-docs:
     enabled: true
