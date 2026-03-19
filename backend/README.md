@@ -11,6 +11,9 @@ cd backend
 docker compose up --build
 ```
 
+ab tumhe otp console par dikh jayegi jab bhi tum request karoge kuch is format me 
+`>>> OTP: [424617] | MOBILE: [***2157] <<<`
+
 This starts: 2nd (swagger-ui) url pe cursor le ja kar control click kar 
 
 - Spring Boot API on `http://localhost:8080`

@@ -133,8 +133,12 @@ public class OtpAuthService {
         // FUTURE USE NOT ENABLED FOR NOW
 //        sendSmsViaTwilio(normalizedMobile, otp);
 
-        log.info("\u001B[36m >>> OTP GENERATED: [{}] for Mobile: [{}] <<<\u001B[0m",
+
+        log.info("\n\n" +
+                        "                               \u001B[33;1m >>> OTP: [{}] | MOBILE: [{}] <<<\u001B[0m" +
+                        "\n",
                 otp, LogSanitizer.maskMobile(normalizedMobile));
+
 
         log.info("otp_request_complete mobile={}", LogSanitizer.maskMobile(normalizedMobile));
 
