@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-call-your-mechanic}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-call-your-mechanic}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-call-your-mechanic}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SERVER_PORT: 8080
+      SECURITY_JWT_SECRET: ${SECURITY_JWT_SECRET:-e0S8JplmeKf5Sq8hJrPdpc3VbH1wVlAbAzzVjlsdhNr}
+      SECURITY_JWT_ACCESS_TOKEN_TTL: ${SECURITY_JWT_ACCESS_TOKEN_TTL:-PT2H}
+      SECURITY_JWT_REFRESH_TOKEN_TTL: ${SECURITY_JWT_REFRESH_TOKEN_TTL:-P30D}
+      SMS_ACCOUNTSID: ${SMS_ACCOUNTSID:-test-account-sid}
+      SMS_AUTHTOKEN: ${SMS_AUTHTOKEN:-test-auth-token}
+      SMS_FROMNUMBER: ${SMS_FROMNUMBER:-+15077765377}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -130,7 +130,12 @@ public class OtpAuthService {
                 savedChallenge.getExpiresAt(),
                 savedChallenge.getCooldownUntil());
 
-        sendSmsViaTwilio(normalizedMobile, otp);
+        // FUTURE USE NOT ENABLED FOR NOW
+//        sendSmsViaTwilio(normalizedMobile, otp);
+
+        log.info("\u001B[36m >>> OTP GENERATED: [{}] for Mobile: [{}] <<<\u001B[0m",
+                otp, LogSanitizer.maskMobile(normalizedMobile));
+
         log.info("otp_request_complete mobile={}", LogSanitizer.maskMobile(normalizedMobile));
 
         // Integrate SMS provider here without logging OTP in plaintext.
