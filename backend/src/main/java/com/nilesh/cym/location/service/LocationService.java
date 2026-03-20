@@ -4,7 +4,7 @@ import com.nilesh.cym.entity.BookingEntity;
 import com.nilesh.cym.entity.MechanicEntity;
 import com.nilesh.cym.entity.MechanicLocationEntity;
 import com.nilesh.cym.entity.UserEntity;
-import com.nilesh.cym.entity.UserLocationEntity;
+import com.nilesh.cym.entity.UserLiveLocationEntity;
 import com.nilesh.cym.entity.enums.BookingStatus;
 import com.nilesh.cym.entity.enums.UserRole;
 import com.nilesh.cym.location.dto.BookingLocationHistoryDto;
@@ -18,7 +18,7 @@ import com.nilesh.cym.logging.LogSanitizer;
 import com.nilesh.cym.repository.BookingRepository;
 import com.nilesh.cym.repository.MechanicLocationRepository;
 import com.nilesh.cym.repository.MechanicRepository;
-import com.nilesh.cym.repository.UserLocationRepository;
+import com.nilesh.cym.repository.UserLiveLocationRepository;
 import com.nilesh.cym.repository.UserRepository;
 import com.nilesh.cym.token.AuthenticatedUser;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +37,9 @@ public class LocationService {
 
     private static final List<BookingStatus> TRACKABLE_STATUSES = List.of(
             BookingStatus.REQUESTED,
-            BookingStatus.ACCEPTED
+            BookingStatus.ACCEPTED,
+            BookingStatus.ON_THE_WAY,
+            BookingStatus.STARTED
     );
 
     private static final int DEFAULT_HISTORY_LIMIT = 50;
@@ -46,7 +48,7 @@ public class LocationService {
     private final MechanicRepository mechanicRepository;
     private final UserRepository userRepository;
     private final MechanicLocationRepository mechanicLocationRepository;
-    private final UserLocationRepository userLocationRepository;
+    private final UserLiveLocationRepository userLiveLocationRepository;
     private final BookingRepository bookingRepository;
     private final LocationEventPublisher locationEventPublisher;
     private final LocationStreamService locationStreamService;
@@ -55,7 +57,7 @@ public class LocationService {
             MechanicRepository mechanicRepository,
             UserRepository userRepository,
             MechanicLocationRepository mechanicLocationRepository,
-            UserLocationRepository userLocationRepository,
+            UserLiveLocationRepository userLiveLocationRepository,
             BookingRepository bookingRepository,
             LocationEventPublisher locationEventPublisher,
             LocationStreamService locationStreamService
@@ -63,7 +65,7 @@ public class LocationService {
         this.mechanicRepository = mechanicRepository;
         this.userRepository = userRepository;
         this.mechanicLocationRepository = mechanicLocationRepository;
-        this.userLocationRepository = userLocationRepository;
+        this.userLiveLocationRepository = userLiveLocationRepository;
         this.bookingRepository = bookingRepository;
         this.locationEventPublisher = locationEventPublisher;
         this.locationStreamService = locationStreamService;
@@ -110,23 +112,21 @@ public class LocationService {
         UserEntity user = userRepository.findById(authenticatedUser.userId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        UserLocationEntity location = new UserLocationEntity();
+        UserLiveLocationEntity location = new UserLiveLocationEntity();
         location.setUser(user);
         location.setLatitude(request.latitude());
         location.setLongitude(request.longitude());
-        location.setAddress("LIVE");
-        location.setDefault(Boolean.FALSE);
 
-        UserLocationEntity saved = userLocationRepository.save(location);
+        UserLiveLocationEntity saved = userLiveLocationRepository.save(location);
 
         bookingRepository.findByUser_IdAndStatusInOrderByBookingTimeDesc(user.getId(), TRACKABLE_STATUSES)
-                .forEach(booking -> publishForBooking(booking, "USER", user.getId(), saved.getLatitude(), saved.getLongitude(), saved.getCreatedAt()));
+                .forEach(booking -> publishForBooking(booking, "USER", user.getId(), saved.getLatitude(), saved.getLongitude(), saved.getRecordedAt()));
 
         LocationResponseDto response = new LocationResponseDto(
                 user.getId(),
                 saved.getLatitude(),
                 saved.getLongitude(),
-                saved.getCreatedAt(),
+                saved.getRecordedAt(),
                 request.timestamp()
         );
         log.info("location_user_update_success userId={} createdAt={}", response.actorId(), response.serverTimestamp());
@@ -136,12 +136,12 @@ public class LocationService {
     public BookingLocationSnapshotDto getLatestBookingLocation(Long bookingId, AuthenticatedUser authenticatedUser) {
         BookingEntity booking = findAuthorizedBooking(bookingId, authenticatedUser);
 
-        LocationResponseDto userLocation = userLocationRepository.findTopByUser_IdOrderByCreatedAtDesc(booking.getUser().getId())
+        LocationResponseDto userLocation = userLiveLocationRepository.findTopByUser_IdOrderByRecordedAtDesc(booking.getUser().getId())
                 .map(saved -> new LocationResponseDto(
                         saved.getUser().getId(),
                         saved.getLatitude(),
                         saved.getLongitude(),
-                        saved.getCreatedAt(),
+                        saved.getRecordedAt(),
                         null
                 ))
                 .orElse(null);
@@ -164,14 +164,14 @@ public class LocationService {
         Instant effectiveSince = since == null ? Instant.EPOCH : since;
         int effectiveLimit = sanitizeLimit(limit);
 
-        List<LocationResponseDto> userLocations = userLocationRepository
-                .findByUser_IdAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(booking.getUser().getId(), effectiveSince, PageRequest.of(0, effectiveLimit))
+        List<LocationResponseDto> userLocations = userLiveLocationRepository
+                .findByUser_IdAndRecordedAtGreaterThanEqualOrderByRecordedAtDesc(booking.getUser().getId(), effectiveSince, PageRequest.of(0, effectiveLimit))
                 .stream()
                 .map(saved -> new LocationResponseDto(
                         saved.getUser().getId(),
                         saved.getLatitude(),
                         saved.getLongitude(),
-                        saved.getCreatedAt(),
+                        saved.getRecordedAt(),
                         null
                 ))
                 .toList();

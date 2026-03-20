@@ -1,6 +1,7 @@
 package com.nilesh.cym.catalog.controller;
 
 import com.nilesh.cym.catalog.dto.ServiceResponseDto;
+import com.nilesh.cym.catalog.dto.ServiceEstimateResponseDto;
 import com.nilesh.cym.catalog.service.ServiceCatalogService;
 import com.nilesh.cym.common.dto.ApiResponse;
 import com.nilesh.cym.config.OpenApiSchemas;
@@ -62,5 +63,14 @@ public class ServiceCatalogController {
         ServiceResponseDto response = serviceCatalogService.findServiceById(serviceId);
         log.info("endpoint_success name=getServiceById serviceId={} vehicleType={}", response.id(), response.vehicleType());
         return ResponseEntity.ok(ApiResponse.success("Service fetched successfully", response));
+    }
+
+    @GetMapping("/{serviceId}/estimate")
+    @Operation(summary = "Get service estimate", description = "Returns a basic estimate for the requested service.")
+    public ResponseEntity<ApiResponse<ServiceEstimateResponseDto>> getServiceEstimate(@PathVariable Long serviceId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Service estimate fetched successfully",
+                serviceCatalogService.estimateByServiceId(serviceId)
+        ));
     }
 }

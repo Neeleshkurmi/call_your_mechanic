@@ -1,6 +1,7 @@
 package com.nilesh.cym.booking.service;
 
 import com.nilesh.cym.booking.dto.BookingResponseDto;
+import com.nilesh.cym.booking.dto.BookingStatusUpdateRequestDto;
 import com.nilesh.cym.booking.dto.CreateBookingRequestDto;
 import com.nilesh.cym.entity.BookingEntity;
 import com.nilesh.cym.entity.MechanicEntity;
@@ -23,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -71,6 +73,10 @@ public class BookingService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Vehicle does not belong to user");
         }
 
+        if (!Boolean.TRUE.equals(mechanic.getAvailable())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mechanic is currently unavailable");
+        }
+
         BookingEntity booking = new BookingEntity();
         booking.setUser(user);
         booking.setMechanic(mechanic);
@@ -91,59 +97,108 @@ public class BookingService {
         return toResponse(saved);
     }
 
-    public BookingResponseDto getBooking(Long bookingId) {
+    public BookingResponseDto getBooking(Long bookingId, AuthenticatedUser authenticatedUser) {
         log.debug("booking_fetch_start bookingId={}", bookingId);
-        BookingResponseDto response = toResponse(fetchBooking(bookingId));
+        BookingResponseDto response = toResponse(findParticipantBooking(bookingId, authenticatedUser));
         log.debug("booking_fetch_success bookingId={} status={}", response.bookingId(), response.status());
         return response;
     }
 
     public List<BookingResponseDto> getUserBookings(AuthenticatedUser authenticatedUser) {
-        requireRole(authenticatedUser, UserRole.USER);
-        List<BookingResponseDto> responses = bookingRepository.findByUser_IdOrderByBookingTimeDesc(authenticatedUser.userId()).stream().map(this::toResponse).toList();
-        log.info("booking_user_list_success userId={} bookingCount={}", authenticatedUser.userId(), responses.size());
-        return responses;
+        return getBookings(authenticatedUser, null);
     }
 
     public List<BookingResponseDto> getMechanicBookings(AuthenticatedUser authenticatedUser) {
-        requireRole(authenticatedUser, UserRole.MECHANIC);
-        Long mechanicId = findMechanicByUserId(authenticatedUser.userId()).getId();
-        List<BookingResponseDto> responses = bookingRepository.findByMechanic_IdOrderByBookingTimeDesc(mechanicId).stream().map(this::toResponse).toList();
-        log.info("booking_mechanic_list_success mechanicId={} bookingCount={}", mechanicId, responses.size());
-        return responses;
+        return getBookings(authenticatedUser, null);
+    }
+
+    public List<BookingResponseDto> getBookings(AuthenticatedUser authenticatedUser, BookingStatus status) {
+        if (authenticatedUser == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Authentication required");
+        }
+        if (authenticatedUser.role() == UserRole.USER) {
+            List<BookingEntity> bookings = status == null
+                    ? bookingRepository.findByUser_IdOrderByBookingTimeDesc(authenticatedUser.userId())
+                    : bookingRepository.findByUser_IdAndStatusOrderByBookingTimeDesc(authenticatedUser.userId(), status);
+            return bookings.stream().map(this::toResponse).toList();
+        }
+        if (authenticatedUser.role() == UserRole.MECHANIC) {
+            Long mechanicId = findMechanicByUserId(authenticatedUser.userId()).getId();
+            List<BookingEntity> bookings = status == null
+                    ? bookingRepository.findByMechanic_IdOrderByBookingTimeDesc(mechanicId)
+                    : bookingRepository.findByMechanic_IdAndStatusOrderByBookingTimeDesc(mechanicId, status);
+            return bookings.stream().map(this::toResponse).toList();
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient role to access this resource");
+    }
+
+    public List<BookingResponseDto> getActiveBookings(AuthenticatedUser authenticatedUser) {
+        List<BookingStatus> activeStatuses = List.of(
+                BookingStatus.REQUESTED,
+                BookingStatus.ACCEPTED,
+                BookingStatus.ON_THE_WAY,
+                BookingStatus.STARTED
+        );
+        if (authenticatedUser == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Authentication required");
+        }
+        if (authenticatedUser.role() == UserRole.USER) {
+            return bookingRepository.findByUser_IdAndStatusInOrderByBookingTimeDesc(authenticatedUser.userId(), activeStatuses)
+                    .stream().map(this::toResponse).toList();
+        }
+        if (authenticatedUser.role() == UserRole.MECHANIC) {
+            Long mechanicId = findMechanicByUserId(authenticatedUser.userId()).getId();
+            return bookingRepository.findByMechanic_IdAndStatusInOrderByBookingTimeDesc(mechanicId, activeStatuses)
+                    .stream().map(this::toResponse).toList();
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient role to access this resource");
     }
 
     public BookingResponseDto acceptBooking(Long bookingId, AuthenticatedUser authenticatedUser) {
-        requireRole(authenticatedUser, UserRole.MECHANIC);
-
-        BookingEntity booking = fetchBooking(bookingId);
-        Long mechanicId = findMechanicByUserId(authenticatedUser.userId()).getId();
-
-        validateMechanicAction(booking, mechanicId);
-        validateTransition(booking.getStatus(), BookingStatus.ACCEPTED);
-        log.info("booking_transition bookingId={} mechanicId={} fromStatus={} toStatus={}",
-                bookingId,
-                mechanicId,
-                booking.getStatus(),
-                BookingStatus.ACCEPTED);
-        booking.setStatus(BookingStatus.ACCEPTED);
-        return toResponse(bookingRepository.save(booking));
+        return updateBookingStatus(bookingId, authenticatedUser, new BookingStatusUpdateRequestDto(BookingStatus.ACCEPTED));
     }
 
     public BookingResponseDto rejectBooking(Long bookingId, AuthenticatedUser authenticatedUser) {
-        requireRole(authenticatedUser, UserRole.MECHANIC);
-
-        BookingEntity booking = fetchBooking(bookingId);
-        Long mechanicId = findMechanicByUserId(authenticatedUser.userId()).getId();
-
-        validateMechanicAction(booking, mechanicId);
-        validateTransition(booking.getStatus(), BookingStatus.CANCELLED);
-        log.info("booking_transition bookingId={} mechanicId={} fromStatus={} toStatus={}",
-                bookingId,
-                mechanicId,
-                booking.getStatus(),
-                BookingStatus.CANCELLED);
+        BookingEntity booking = findAssignedMechanicBooking(bookingId, authenticatedUser);
+        validateTransition(booking.getStatus(), BookingStatus.CANCELLED, authenticatedUser.role(), true);
         booking.setStatus(BookingStatus.CANCELLED);
+        return toResponse(bookingRepository.save(booking));
+    }
+
+    public BookingResponseDto updateBookingStatus(Long bookingId, AuthenticatedUser authenticatedUser, BookingStatusUpdateRequestDto request) {
+        BookingEntity booking = findAssignedMechanicBooking(bookingId, authenticatedUser);
+        validateTransition(booking.getStatus(), request.status(), authenticatedUser.role(), false);
+        booking.setStatus(request.status());
+        return toResponse(bookingRepository.save(booking));
+    }
+
+    public BookingResponseDto cancelBooking(Long bookingId, AuthenticatedUser authenticatedUser) {
+        BookingEntity booking = findUserBooking(bookingId, authenticatedUser);
+        validateTransition(booking.getStatus(), BookingStatus.CANCELLED, authenticatedUser.role(), false);
+        booking.setStatus(BookingStatus.CANCELLED);
+        return toResponse(bookingRepository.save(booking));
+    }
+
+    public BookingResponseDto completeBooking(Long bookingId, AuthenticatedUser authenticatedUser) {
+        return updateBookingStatus(bookingId, authenticatedUser, new BookingStatusUpdateRequestDto(BookingStatus.COMPLETED));
+    }
+
+    public BookingResponseDto rebook(Long bookingId, AuthenticatedUser authenticatedUser) {
+        BookingEntity original = findUserBooking(bookingId, authenticatedUser);
+        MechanicEntity mechanic = original.getMechanic();
+        if (!Boolean.TRUE.equals(mechanic.getAvailable())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mechanic is currently unavailable");
+        }
+
+        BookingEntity booking = new BookingEntity();
+        booking.setUser(original.getUser());
+        booking.setMechanic(mechanic);
+        booking.setVehicle(original.getVehicle());
+        booking.setService(original.getService());
+        booking.setStatus(BookingStatus.REQUESTED);
+        booking.setBookingTime(Instant.now());
+        booking.setLatitude(original.getLatitude());
+        booking.setLongitude(original.getLongitude());
         return toResponse(bookingRepository.save(booking));
     }
 
@@ -172,8 +227,24 @@ public class BookingService {
         }
     }
 
-    private void validateTransition(BookingStatus current, BookingStatus target) {
-        boolean valid = current == BookingStatus.REQUESTED && (target == BookingStatus.ACCEPTED || target == BookingStatus.CANCELLED);
+    private void validateTransition(BookingStatus current, BookingStatus target, UserRole actorRole, boolean legacyReject) {
+        boolean valid;
+        if (target == BookingStatus.CANCELLED) {
+            valid = legacyReject
+                    ? actorRole == UserRole.MECHANIC && Set.of(BookingStatus.REQUESTED, BookingStatus.ACCEPTED).contains(current)
+                    : actorRole == UserRole.USER && current != BookingStatus.COMPLETED && current != BookingStatus.CANCELLED;
+        } else if (actorRole == UserRole.MECHANIC) {
+            valid = switch (target) {
+                case ACCEPTED -> current == BookingStatus.REQUESTED;
+                case ON_THE_WAY -> current == BookingStatus.ACCEPTED;
+                case STARTED -> current == BookingStatus.ON_THE_WAY;
+                case COMPLETED -> current == BookingStatus.STARTED;
+                default -> false;
+            };
+        } else {
+            valid = false;
+        }
+
         if (!valid) {
             log.warn("booking_transition_rejected currentStatus={} targetStatus={}", current, target);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid booking status transition");
@@ -183,6 +254,34 @@ public class BookingService {
     private BookingEntity fetchBooking(Long bookingId) {
         log.debug("booking_lookup bookingId={}", bookingId);
         return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+    }
+
+    private BookingEntity findParticipantBooking(Long bookingId, AuthenticatedUser authenticatedUser) {
+        if (authenticatedUser == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Authentication required");
+        }
+        BookingEntity booking = bookingRepository.findWithParticipantsById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+        boolean userParticipant = booking.getUser().getId().equals(authenticatedUser.userId());
+        boolean mechanicParticipant = booking.getMechanic().getUser().getId().equals(authenticatedUser.userId());
+        if (!userParticipant && !mechanicParticipant) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to access this booking");
+        }
+        return booking;
+    }
+
+    private BookingEntity findAssignedMechanicBooking(Long bookingId, AuthenticatedUser authenticatedUser) {
+        requireRole(authenticatedUser, UserRole.MECHANIC);
+        BookingEntity booking = fetchBooking(bookingId);
+        Long mechanicId = findMechanicByUserId(authenticatedUser.userId()).getId();
+        validateMechanicAction(booking, mechanicId);
+        return booking;
+    }
+
+    private BookingEntity findUserBooking(Long bookingId, AuthenticatedUser authenticatedUser) {
+        requireRole(authenticatedUser, UserRole.USER);
+        return bookingRepository.findByIdAndUser_Id(bookingId, authenticatedUser.userId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
     }
 

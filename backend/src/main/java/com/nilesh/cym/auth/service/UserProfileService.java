@@ -1,6 +1,7 @@
 package com.nilesh.cym.auth.service;
 
 import com.nilesh.cym.auth.dto.CurrentUserProfileDto;
+import com.nilesh.cym.auth.dto.CurrentUserUpdateRequestDto;
 import com.nilesh.cym.auth.dto.ProfileUpdateRequestDto;
 import com.nilesh.cym.auth.dto.ProfileUpdateResponseDto;
 import com.nilesh.cym.entity.UserEntity;
@@ -80,6 +81,25 @@ public class UserProfileService {
                 tokenPair.accessExpiresAt().toEpochMilli(),
                 tokenPair.refreshExpiresAt().toEpochMilli()
         );
+    }
+
+    @Transactional
+    public CurrentUserProfileDto updateCurrentUser(AuthenticatedUser authenticatedUser, CurrentUserUpdateRequestDto request) {
+        requireAuthenticatedUser(authenticatedUser);
+        UserEntity user = userRepository.findById(authenticatedUser.userId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        user.setName(normalizeName(request.name()));
+        user.setRole(validateSelectableRole(request.role()));
+        UserEntity saved = userRepository.save(user);
+        return new CurrentUserProfileDto(saved.getId(), saved.getName(), saved.getMob(), saved.getRole());
+    }
+
+    @Transactional
+    public CurrentUserProfileDto getCurrentUser(AuthenticatedUser authenticatedUser) {
+        requireAuthenticatedUser(authenticatedUser);
+        UserEntity user = userRepository.findById(authenticatedUser.userId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        return new CurrentUserProfileDto(user.getId(), user.getName(), user.getMob(), user.getRole());
     }
 
     private void requireAuthenticatedUser(AuthenticatedUser authenticatedUser) {

@@ -66,15 +66,16 @@ ON CONFLICT (id) DO UPDATE SET
     longitude = EXCLUDED.longitude,
     recorded_at = EXCLUDED.recorded_at;
 
-INSERT INTO user_locations (id, created_at, updated_at, user_id, latitude, longitude, address, is_default)
+INSERT INTO user_locations (id, created_at, updated_at, user_id, latitude, longitude, label, address, is_default)
 VALUES
-    (1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, 18.5204, 73.8567, 'Pune Test Address', TRUE),
-    (2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 3, 18.6300, 73.8000, 'Backup Test Address', FALSE)
+    (1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, 18.5204, 73.8567, 'HOME', 'Pune Test Address', TRUE),
+    (2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 3, 18.6300, 73.8000, 'OFFICE', 'Backup Test Address', FALSE)
 ON CONFLICT (id) DO UPDATE SET
     updated_at = CURRENT_TIMESTAMP,
     user_id = EXCLUDED.user_id,
     latitude = EXCLUDED.latitude,
     longitude = EXCLUDED.longitude,
+    label = EXCLUDED.label,
     address = EXCLUDED.address,
     is_default = EXCLUDED.is_default;
 
@@ -85,3 +86,5 @@ SELECT setval(pg_get_serial_sequence('vehicles', 'id'), GREATEST((SELECT COALESC
 SELECT setval(pg_get_serial_sequence('bookings', 'id'), GREATEST((SELECT COALESCE(MAX(id), 1) FROM bookings), 1), true);
 SELECT setval(pg_get_serial_sequence('mechanic_locations', 'id'), GREATEST((SELECT COALESCE(MAX(id), 1) FROM mechanic_locations), 1), true);
 SELECT setval(pg_get_serial_sequence('user_locations', 'id'), GREATEST((SELECT COALESCE(MAX(id), 1) FROM user_locations), 1), true);
+SELECT setval(pg_get_serial_sequence('user_live_locations', 'id'), GREATEST((SELECT COALESCE(MAX(id), 1) FROM user_live_locations), 1), true);
+SELECT setval(pg_get_serial_sequence('reviews', 'id'), GREATEST((SELECT COALESCE(MAX(id), 1) FROM reviews), 1), true);

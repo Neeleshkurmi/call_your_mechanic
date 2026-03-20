@@ -1,6 +1,7 @@
 package com.nilesh.cym.catalog.service;
 
 import com.nilesh.cym.catalog.dto.ServiceResponseDto;
+import com.nilesh.cym.catalog.dto.ServiceEstimateResponseDto;
 import com.nilesh.cym.entity.ServiceEntity;
 import com.nilesh.cym.entity.enums.VehicleType;
 import com.nilesh.cym.repository.ServiceRepository;
@@ -39,6 +40,24 @@ public class ServiceCatalogService {
         ServiceResponseDto response = toResponse(service);
         log.info("service_fetch_success serviceId={} vehicleType={}", response.id(), response.vehicleType());
         return response;
+    }
+
+    public ServiceEstimateResponseDto estimateByServiceId(Long serviceId) {
+        ServiceEntity service = serviceRepository.findById(serviceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found"));
+        double amount = switch (service.getVehicleType()) {
+            case BIKE -> 299D;
+            case CAR -> 499D;
+            case TRUCK -> 899D;
+            case ALL -> 399D;
+        };
+        int duration = switch (service.getVehicleType()) {
+            case BIKE -> 25;
+            case CAR -> 40;
+            case TRUCK -> 60;
+            case ALL -> 30;
+        };
+        return new ServiceEstimateResponseDto(service.getId(), service.getName(), amount, duration, "Basic service estimate generated successfully");
     }
 
     private ServiceResponseDto toResponse(ServiceEntity entity) {

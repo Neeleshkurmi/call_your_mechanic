@@ -25,6 +25,9 @@ public class UserLocationEntity extends AuditableEntity {
     @Column(nullable = false)
     private Double longitude;
 
+    @Column(length = 80)
+    private String label;
+
     @Column(nullable = false, length = 300)
     private String address;
 
@@ -61,6 +64,14 @@ public class UserLocationEntity extends AuditableEntity {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
     }
 
     public Boolean getDefault() {

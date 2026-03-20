@@ -1,7 +1,9 @@
 package com.nilesh.cym.booking.controller;
 
 import com.nilesh.cym.booking.dto.BookingResponseDto;
+import com.nilesh.cym.booking.dto.BookingStatusUpdateRequestDto;
 import com.nilesh.cym.booking.dto.CreateBookingRequestDto;
+import com.nilesh.cym.entity.enums.BookingStatus;
 import com.nilesh.cym.booking.service.BookingService;
 import com.nilesh.cym.common.dto.ApiResponse;
 import com.nilesh.cym.config.OpenApiConfig;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -75,11 +78,35 @@ public class BookingController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Booking not found", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error", content = @Content(schema = @Schema(implementation = OpenApiSchemas.ErrorApiResponse.class)))
     })
-    public ResponseEntity<ApiResponse<BookingResponseDto>> getBooking(@PathVariable Long bookingId) {
+    public ResponseEntity<ApiResponse<BookingResponseDto>> getBooking(
+            @PathVariable Long bookingId,
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
         log.info("endpoint_request name=getBooking bookingId={}", bookingId);
-        BookingResponseDto response = bookingService.getBooking(bookingId);
+        BookingResponseDto response = bookingService.getBooking(bookingId, authenticatedUser);
         log.info("endpoint_success name=getBooking bookingId={} status={}", response.bookingId(), response.status());
         return ResponseEntity.ok(ApiResponse.success("Booking fetched successfully", response));
+    }
+
+    @GetMapping("/bookings")
+    @Operation(summary = "List bookings for authenticated actor", description = "Returns bookings for the authenticated user or mechanic and optionally filters by status.")
+    public ResponseEntity<ApiResponse<List<BookingResponseDto>>> getBookings(
+            @RequestParam(required = false) BookingStatus status,
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        List<BookingResponseDto> responses = bookingService.getBookings(authenticatedUser, status);
+        return ResponseEntity.ok(ApiResponse.success("Bookings fetched successfully", responses));
+    }
+
+    @GetMapping("/bookings/active")
+    @Operation(summary = "Get active bookings", description = "Returns active bookings for the authenticated user or mechanic.")
+    public ResponseEntity<ApiResponse<List<BookingResponseDto>>> getActiveBookings(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Active bookings fetched successfully", bookingService.getActiveBookings(authenticatedUser)));
     }
 
     @GetMapping("/users/me/bookings")
@@ -160,5 +187,50 @@ public class BookingController {
         BookingResponseDto response = bookingService.rejectBooking(bookingId, authenticatedUser);
         log.info("endpoint_success name=rejectBooking bookingId={} status={}", response.bookingId(), response.status());
         return ResponseEntity.ok(ApiResponse.success("Booking rejected successfully", response));
+    }
+
+    @PatchMapping("/bookings/{bookingId}/status")
+    @Operation(summary = "Update booking status", description = "Updates a booking status according to the mechanic lifecycle rules.")
+    public ResponseEntity<ApiResponse<BookingResponseDto>> updateBookingStatus(
+            @PathVariable Long bookingId,
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @Valid @RequestBody BookingStatusUpdateRequestDto request
+    ) {
+        BookingResponseDto response = bookingService.updateBookingStatus(bookingId, authenticatedUser, request);
+        return ResponseEntity.ok(ApiResponse.success("Booking status updated successfully", response));
+    }
+
+    @PatchMapping("/bookings/{bookingId}/cancel")
+    @Operation(summary = "Cancel booking", description = "Allows the booking user to cancel a pre-completion booking.")
+    public ResponseEntity<ApiResponse<BookingResponseDto>> cancelBooking(
+            @PathVariable Long bookingId,
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        BookingResponseDto response = bookingService.cancelBooking(bookingId, authenticatedUser);
+        return ResponseEntity.ok(ApiResponse.success("Booking cancelled successfully", response));
+    }
+
+    @PatchMapping("/bookings/{bookingId}/complete")
+    @Operation(summary = "Complete booking", description = "Allows the assigned mechanic to mark the job as completed.")
+    public ResponseEntity<ApiResponse<BookingResponseDto>> completeBooking(
+            @PathVariable Long bookingId,
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        BookingResponseDto response = bookingService.completeBooking(bookingId, authenticatedUser);
+        return ResponseEntity.ok(ApiResponse.success("Booking completed successfully", response));
+    }
+
+    @PostMapping("/bookings/{bookingId}/rebook")
+    @Operation(summary = "Rebook booking", description = "Creates a new booking by copying a user's previous booking details.")
+    public ResponseEntity<ApiResponse<BookingResponseDto>> rebook(
+            @PathVariable Long bookingId,
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        BookingResponseDto response = bookingService.rebook(bookingId, authenticatedUser);
+        return ResponseEntity.ok(ApiResponse.success("Booking re-created successfully", response));
     }
 }

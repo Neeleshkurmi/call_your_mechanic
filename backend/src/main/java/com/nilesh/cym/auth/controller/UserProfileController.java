@@ -2,6 +2,8 @@ package com.nilesh.cym.auth.controller;
 
 import com.nilesh.cym.auth.dto.ProfileUpdateRequestDto;
 import com.nilesh.cym.auth.dto.ProfileUpdateResponseDto;
+import com.nilesh.cym.auth.dto.CurrentUserProfileDto;
+import com.nilesh.cym.auth.dto.CurrentUserUpdateRequestDto;
 import com.nilesh.cym.auth.service.UserProfileService;
 import com.nilesh.cym.common.dto.ApiResponse;
 import com.nilesh.cym.config.OpenApiConfig;
@@ -20,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -61,5 +65,24 @@ public class UserProfileController {
                 response.user().userId(),
                 response.user().role());
         return ResponseEntity.ok(ApiResponse.success("User profile updated successfully", response));
+    }
+
+    @GetMapping
+    @Operation(summary = "Get current user", description = "Returns the authenticated user's current profile.")
+    public ResponseEntity<ApiResponse<CurrentUserProfileDto>> getCurrentUser(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Current user fetched successfully", userProfileService.getCurrentUser(authenticatedUser)));
+    }
+
+    @PutMapping
+    @Operation(summary = "Update current user", description = "Updates the authenticated user's name and role without rotating tokens.")
+    public ResponseEntity<ApiResponse<CurrentUserProfileDto>> updateCurrentUser(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @Valid @RequestBody CurrentUserUpdateRequestDto request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Current user updated successfully", userProfileService.updateCurrentUser(authenticatedUser, request)));
     }
 }

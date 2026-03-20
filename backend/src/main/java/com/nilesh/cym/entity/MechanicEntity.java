@@ -30,6 +30,12 @@ public class MechanicEntity extends AuditableEntity {
     @Column(nullable = false, precision = 3, scale = 2)
     private BigDecimal rating = BigDecimal.ZERO;
 
+    @Column(length = 1000)
+    private String bio;
+
+    @Column(length = 500)
+    private String skills;
+
     public UserEntity getUser() {
         return user;
     }
@@ -60,5 +66,21 @@ public class MechanicEntity extends AuditableEntity {
 
     public void setRating(BigDecimal rating) {
         this.rating = rating;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getSkills() {
+        return skills;
+    }
+
+    public void setSkills(String skills) {
+        this.skills = skills;
     }
 }

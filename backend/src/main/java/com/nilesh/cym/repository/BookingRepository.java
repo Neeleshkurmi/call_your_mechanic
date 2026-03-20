@@ -18,6 +18,10 @@ public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
 
     List<BookingEntity> findByMechanic_IdAndStatusInOrderByBookingTimeDesc(Long mechanicId, List<BookingStatus> statuses);
 
+    List<BookingEntity> findByUser_IdAndStatusOrderByBookingTimeDesc(Long userId, BookingStatus status);
+
+    List<BookingEntity> findByMechanic_IdAndStatusOrderByBookingTimeDesc(Long mechanicId, BookingStatus status);
+
     Optional<BookingEntity> findByIdAndUser_Id(Long bookingId, Long userId);
 
     Optional<BookingEntity> findByIdAndMechanic_Id(Long bookingId, Long mechanicId);
