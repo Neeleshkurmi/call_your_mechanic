@@ -6,6 +6,7 @@ import com.nilesh.cym.mechanic.dto.MechanicAvailabilityRequestDto;
 import com.nilesh.cym.mechanic.dto.MechanicEarningsResponseDto;
 import com.nilesh.cym.mechanic.dto.MechanicProfileRequestDto;
 import com.nilesh.cym.mechanic.dto.MechanicProfileResponseDto;
+import com.nilesh.cym.mechanic.dto.MechanicRegistrationResponseDto;
 import com.nilesh.cym.mechanic.dto.NearbyMechanicResponseDto;
 import com.nilesh.cym.mechanic.service.MechanicService;
 import com.nilesh.cym.token.AuthenticatedUser;
@@ -16,6 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,6 +39,19 @@ public class MechanicController {
 
     public MechanicController(MechanicService mechanicService) {
         this.mechanicService = mechanicService;
+    }
+
+    @PostMapping("/register")
+    @Operation(summary = "Register current user as mechanic")
+    public ResponseEntity<ApiResponse<MechanicRegistrationResponseDto>> registerMechanic(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @Valid @RequestBody MechanicProfileRequestDto request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Mechanic registered successfully",
+                mechanicService.registerMechanic(authenticatedUser, request)
+        ));
     }
 
     @GetMapping("/nearby")
