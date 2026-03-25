@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head(${pageTitle})}"></head>
+<body th:attr="data-page=${pageName},data-role-scope=${pageRole}">
+<main class="page-shell">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Garage</p>
+            <h1>My Vehicles</h1>
+        </div>
+        <button class="btn btn-muted" type="button" data-logout>Logout</button>
+    </header>
+    <div class="grid two">
+        <section class="panel">
+            <div id="vehicles-banner" class="banner"></div>
+            <h2 id="vehicle-form-title">Add vehicle</h2>
+            <form id="vehicle-form">
+                <div class="field">
+                    <label for="vehicle-type">Vehicle Type</label>
+                    <select id="vehicle-type" name="vehicleType">
+                        <option value="CAR">Car</option>
+                        <option value="BIKE">Bike</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="brand">Brand</label>
+                    <input id="brand" name="brand" type="text">
+                </div>
+                <div class="field">
+                    <label for="model">Model</label>
+                    <input id="model" name="model" type="text">
+                </div>
+                <div class="field">
+                    <label for="registration-number">Registration Number</label>
+                    <input id="registration-number" name="registrationNumber" type="text">
+                </div>
+                <button class="btn btn-primary" type="submit">Save Vehicle</button>
+            </form>
+        </section>
+        <section>
+            <div id="vehicle-list" class="vehicle-list" data-fatal-target></div>
+        </section>
+    </div>
+</main>
+<div th:replace="~{fragments/common :: userNav('vehicles')}"></div>
+<div th:replace="~{fragments/common :: toastHost}"></div>
+<div th:replace="~{fragments/common :: appScript}"></div>
+</body>
+</html>

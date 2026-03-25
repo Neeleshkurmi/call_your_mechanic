@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head(${pageTitle})}"></head>
+<body th:attr="data-page=${pageName},data-role-scope=${pageRole}">
+<main class="page-shell">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Discovery</p>
+            <h1>Nearby Mechanics</h1>
+            <p id="nearby-summary" class="helper-text">Loading nearby professionals...</p>
+        </div>
+        <a class="btn btn-muted" th:href="@{/app/user/home}">Back</a>
+    </header>
+    <div id="nearby-banner" class="banner"></div>
+    <section class="map-card">
+        <div class="map-grid">
+            <h2>Map-ready search area</h2>
+            <p class="helper-text">This placeholder keeps the layout ready for a real map integration later.</p>
+        </div>
+    </section>
+    <section id="nearby-mechanics" class="mechanic-list" data-fatal-target></section>
+</main>
+<div th:replace="~{fragments/common :: userNav('nearby')}"></div>
+<div th:replace="~{fragments/common :: toastHost}"></div>
+<div th:replace="~{fragments/common :: appScript}"></div>
+</body>
+</html>

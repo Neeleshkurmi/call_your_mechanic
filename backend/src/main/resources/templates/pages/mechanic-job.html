@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head(${pageTitle})}"></head>
+<body th:attr="data-page=${pageName},data-role-scope=${pageRole}">
+<main class="page-shell">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Active job</p>
+            <h1>Job Progress</h1>
+        </div>
+        <a class="btn btn-muted" th:href="@{/app/mechanic/requests}">Requests</a>
+    </header>
+    <div id="mechanic-job-banner" class="banner"></div>
+    <section id="mechanic-active-job" class="booking-list" data-fatal-target></section>
+</main>
+<div th:replace="~{fragments/common :: mechanicNav('job')}"></div>
+<div th:replace="~{fragments/common :: toastHost}"></div>
+<div th:replace="~{fragments/common :: appScript}"></div>
+</body>
+</html>

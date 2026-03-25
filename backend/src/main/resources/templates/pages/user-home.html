@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head(${pageTitle})}"></head>
+<body th:attr="data-page=${pageName},data-role-scope=${pageRole}">
+<main class="page-shell">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">User flow</p>
+            <h1>Roadside help in a few taps</h1>
+        </div>
+        <button class="btn btn-muted" type="button" data-logout>Logout</button>
+    </header>
+    <div id="home-banner" class="banner"></div>
+    <section class="grid two">
+        <article class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Current Location</h2>
+                    <p class="helper-text">Use live coordinates to discover nearby mechanics.</p>
+                </div>
+                <button id="set-location-button" class="btn btn-secondary" type="button">Set Location</button>
+            </div>
+            <p id="location-label" class="pill">Location not captured yet</p>
+        </article>
+        <article class="panel">
+            <h2>Select Vehicle</h2>
+            <p class="helper-text">Choose one of your saved vehicles before booking.</p>
+            <select id="vehicle-select">
+                <option value="">Select vehicle</option>
+            </select>
+        </article>
+    </section>
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h2>Select Service</h2>
+                <p class="helper-text">Available services are pulled live from the public catalog.</p>
+            </div>
+            <button id="find-mechanic-button" class="btn btn-primary" type="button">Find Mechanic</button>
+        </div>
+        <div id="service-list" class="service-grid" data-fatal-target></div>
+    </section>
+</main>
+<div th:replace="~{fragments/common :: userNav('home')}"></div>
+<div th:replace="~{fragments/common :: toastHost}"></div>
+<div th:replace="~{fragments/common :: appScript}"></div>
+</body>
+</html>

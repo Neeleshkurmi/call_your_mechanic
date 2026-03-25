@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head(${pageTitle})}"></head>
+<body th:attr="data-page=${pageName},data-role-scope=${pageRole}">
+<main class="page-shell">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Account</p>
+            <h1>User Profile</h1>
+        </div>
+        <button class="btn btn-muted" type="button" data-logout>Logout</button>
+    </header>
+    <section class="panel">
+        <div id="user-profile-banner" class="banner"></div>
+        <form id="user-profile-form">
+            <div class="field">
+                <label for="user-name">Name</label>
+                <input id="user-name" name="name" type="text">
+            </div>
+            <div class="field">
+                <label for="user-mobile">Phone</label>
+                <input id="user-mobile" name="mobile" type="text" readonly>
+            </div>
+            <div class="field">
+                <label for="user-role">Role</label>
+                <select id="user-role" name="role" disabled>
+                    <option value="USER">User</option>
+                    <option value="MECHANIC">Mechanic</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" type="submit">Update Profile</button>
+        </form>
+    </section>
+</main>
+<div th:replace="~{fragments/common :: userNav('profile')}"></div>
+<div th:replace="~{fragments/common :: toastHost}"></div>
+<div th:replace="~{fragments/common :: appScript}"></div>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head(${pageTitle})}"></head>
+<body th:attr="data-page=${pageName},data-role-scope=${pageRole},data-booking-id=${bookingId}">
+<main class="page-shell">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Tracking</p>
+            <h1>Live Tracking</h1>
+        </div>
+        <a class="btn btn-muted" th:href="@{/app/user/home}">Home</a>
+    </header>
+    <div id="tracking-banner" class="banner"></div>
+    <section class="grid two">
+        <article class="map-card">
+            <div class="map-grid">
+                <h2>Route Snapshot</h2>
+                <p class="helper-text">Live positions update here without a full map SDK.</p>
+                <p id="user-coordinates" class="pill">Waiting for user coordinates</p>
+                <p id="mechanic-coordinates" class="pill">Mechanic location not shared yet</p>
+            </div>
+        </article>
+        <article class="panel">
+            <h2 id="tracking-mechanic">Mechanic</h2>
+            <div class="meta-row">
+                <span id="tracking-status" class="status-chip">Loading</span>
+                <span id="tracking-eta" class="pill">Updating</span>
+            </div>
+            <div class="button-row">
+                <a id="call-mechanic-button" class="btn btn-secondary" href="tel:">Call</a>
+                <button id="cancel-booking-button" class="btn btn-danger" type="button">Cancel</button>
+            </div>
+        </article>
+    </section>
+    <section class="panel">
+        <h2>Recent Location History</h2>
+        <div id="tracking-history" class="timeline-list" data-fatal-target></div>
+    </section>
+</main>
+<div th:replace="~{fragments/common :: userNav('nearby')}"></div>
+<div th:replace="~{fragments/common :: toastHost}"></div>
+<div th:replace="~{fragments/common :: appScript}"></div>
+</body>
+</html>

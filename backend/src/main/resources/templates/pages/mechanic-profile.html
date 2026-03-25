@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head(${pageTitle})}"></head>
+<body th:attr="data-page=${pageName},data-role-scope=${pageRole}">
+<main class="page-shell">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Mechanic identity</p>
+            <h1>Mechanic Profile</h1>
+        </div>
+        <button class="btn btn-muted" type="button" data-logout>Logout</button>
+    </header>
+    <section class="panel">
+        <div id="mechanic-profile-banner" class="banner"></div>
+        <form id="mechanic-profile-form">
+            <div class="grid two">
+                <div class="field">
+                    <label for="mechanic-name-field">Name</label>
+                    <input id="mechanic-name-field" name="name" type="text" readonly>
+                </div>
+                <div class="field">
+                    <label for="mechanic-mobile-field">Phone</label>
+                    <input id="mechanic-mobile-field" name="mobile" type="text" readonly>
+                </div>
+                <div class="field">
+                    <label for="mechanic-rating-field">Rating</label>
+                    <input id="mechanic-rating-field" name="rating" type="text" readonly>
+                </div>
+                <div class="field">
+                    <label for="mechanic-experience-field">Experience Years</label>
+                    <input id="mechanic-experience-field" name="experienceYears" type="number" min="0">
+                </div>
+            </div>
+            <div class="field">
+                <label for="mechanic-skills-field">Skills</label>
+                <textarea id="mechanic-skills-field" name="skills"></textarea>
+            </div>
+            <div class="field">
+                <label for="mechanic-bio-field">Bio</label>
+                <textarea id="mechanic-bio-field" name="bio"></textarea>
+            </div>
+            <button class="btn btn-primary" type="submit">Update Profile</button>
+        </form>
+    </section>
+</main>
+<div th:replace="~{fragments/common :: mechanicNav('profile')}"></div>
+<div th:replace="~{fragments/common :: toastHost}"></div>
+<div th:replace="~{fragments/common :: appScript}"></div>
+</body>
+</html>

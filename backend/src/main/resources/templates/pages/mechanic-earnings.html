@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head(${pageTitle})}"></head>
+<body th:attr="data-page=${pageName},data-role-scope=${pageRole}">
+<main class="page-shell">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Payout overview</p>
+            <h1>Earnings</h1>
+        </div>
+        <a class="btn btn-muted" th:href="@{/app/mechanic/dashboard}">Dashboard</a>
+    </header>
+    <section class="stat-grid">
+        <article class="stat-card">
+            <p class="helper-text">Total Earnings</p>
+            <div id="earnings-total-value" class="stat-value">₹0</div>
+        </article>
+        <article class="stat-card">
+            <p class="helper-text">Completed Jobs</p>
+            <div id="earnings-completed-value" class="stat-value">0</div>
+        </article>
+        <article class="stat-card">
+            <p class="helper-text">Average Per Job</p>
+            <div id="earnings-average-value" class="stat-value">₹0</div>
+        </article>
+    </section>
+    <section id="earnings-booking-list" class="booking-list" data-fatal-target></section>
+</main>
+<div th:replace="~{fragments/common :: mechanicNav('earnings')}"></div>
+<div th:replace="~{fragments/common :: toastHost}"></div>
+<div th:replace="~{fragments/common :: appScript}"></div>
+</body>
+</html>

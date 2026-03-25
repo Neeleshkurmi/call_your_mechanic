@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head(${pageTitle})}"></head>
+<body th:attr="data-page=${pageName},data-role-scope=${pageRole}">
+<main class="page-shell">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Mechanic hub</p>
+            <h1>Mechanic Dashboard</h1>
+        </div>
+        <button class="btn btn-muted" type="button" data-logout>Logout</button>
+    </header>
+    <div id="mechanic-dashboard-banner" class="banner"></div>
+    <section class="grid two">
+        <article class="panel">
+            <h2 id="mechanic-name">Mechanic</h2>
+            <p class="helper-text">Current status</p>
+            <div class="field-inline">
+                <input id="availability-toggle" type="checkbox">
+                <span id="availability-status" class="status-chip">OFFLINE</span>
+            </div>
+        </article>
+        <article class="panel">
+            <h2>Current Booking</h2>
+            <p id="current-booking-status" class="service-name">Loading...</p>
+        </article>
+    </section>
+    <section class="stat-grid">
+        <article class="stat-card">
+            <p class="helper-text">Earnings Today Snapshot</p>
+            <div id="earnings-total" class="stat-value">₹0</div>
+        </article>
+        <article class="stat-card">
+            <p class="helper-text">Completed Jobs</p>
+            <div id="completed-jobs" class="stat-value">0</div>
+        </article>
+    </section>
+</main>
+<div th:replace="~{fragments/common :: mechanicNav('dashboard')}"></div>
+<div th:replace="~{fragments/common :: toastHost}"></div>
+<div th:replace="~{fragments/common :: appScript}"></div>
+</body>
+</html>

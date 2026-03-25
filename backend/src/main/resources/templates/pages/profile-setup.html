@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head(${pageTitle})}"></head>
+<body th:attr="data-page=${pageName},data-role-scope=${pageRole}">
+<main class="page-shell public-shell">
+    <section class="public-grid">
+        <div th:replace="~{fragments/common :: publicHeader('Finish onboarding', 'Complete Your Profile', 'Choose how you want to use the app today and keep your account details up to date.')}"></div>
+        <section class="panel">
+            <div id="profile-banner" class="banner"></div>
+            <p class="helper-text">Signed in as <strong id="current-mobile"></strong></p>
+            <form id="profile-setup-form">
+                <div class="field">
+                    <label for="full-name">Name</label>
+                    <input id="full-name" type="text" placeholder="Your full name">
+                </div>
+                <div class="field">
+                    <label>Select Role</label>
+                    <label class="field-inline"><input type="radio" name="role" value="USER"> User</label>
+                    <label class="field-inline"><input type="radio" name="role" value="MECHANIC"> Mechanic</label>
+                </div>
+                <button class="btn btn-primary" type="submit">Continue</button>
+            </form>
+        </section>
+    </section>
+</main>
+<div th:replace="~{fragments/common :: toastHost}"></div>
+<div th:replace="~{fragments/common :: appScript}"></div>
+</body>
+</html>

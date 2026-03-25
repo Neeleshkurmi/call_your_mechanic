@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head(${pageTitle})}"></head>
+<body th:attr="data-page=${pageName},data-role-scope=${pageRole}">
+<main class="page-shell">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Booking</p>
+            <h1>Confirm Booking</h1>
+        </div>
+        <a class="btn btn-muted" th:href="@{/app/user/nearby}">Back</a>
+    </header>
+    <div id="booking-banner" class="banner"></div>
+    <section class="panel">
+        <div class="grid two">
+            <article class="card">
+                <h3>Mechanic</h3>
+                <p id="booking-mechanic" class="service-name">Loading...</p>
+            </article>
+            <article class="card">
+                <h3>Service</h3>
+                <p id="booking-service" class="service-name">Loading...</p>
+            </article>
+            <article class="card">
+                <h3>Vehicle</h3>
+                <p id="booking-vehicle" class="service-name">Loading...</p>
+            </article>
+            <article class="card">
+                <h3>Location</h3>
+                <p id="booking-location" class="service-name">Loading...</p>
+            </article>
+        </div>
+        <div class="button-row">
+            <button id="confirm-booking-button" class="btn btn-primary" type="button">Confirm Booking</button>
+        </div>
+    </section>
+</main>
+<div th:replace="~{fragments/common :: userNav('nearby')}"></div>
+<div th:replace="~{fragments/common :: toastHost}"></div>
+<div th:replace="~{fragments/common :: appScript}"></div>
+</body>
+</html>

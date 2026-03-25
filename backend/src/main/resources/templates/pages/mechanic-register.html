@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head(${pageTitle})}"></head>
+<body th:attr="data-page=${pageName},data-role-scope=${pageRole}">
+<main class="page-shell">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Mechanic onboarding</p>
+            <h1>Become a Mechanic</h1>
+        </div>
+        <button class="btn btn-muted" type="button" data-logout>Logout</button>
+    </header>
+    <section class="panel">
+        <div id="mechanic-register-banner" class="banner"></div>
+        <form id="mechanic-register-form">
+            <div class="field">
+                <label for="experience-years">Experience</label>
+                <input id="experience-years" name="experienceYears" type="number" min="0" placeholder="5">
+            </div>
+            <div class="field">
+                <label for="skills">Skills</label>
+                <textarea id="skills" name="skills" placeholder="Engine diagnostics, battery jump start"></textarea>
+            </div>
+            <div class="field">
+                <label for="bio">Bio</label>
+                <textarea id="bio" name="bio" placeholder="Tell users about your roadside expertise"></textarea>
+            </div>
+            <button class="btn btn-primary" type="submit">Register</button>
+        </form>
+    </section>
+</main>
+<div th:replace="~{fragments/common :: toastHost}"></div>
+<div th:replace="~{fragments/common :: appScript}"></div>
+</body>
+</html>

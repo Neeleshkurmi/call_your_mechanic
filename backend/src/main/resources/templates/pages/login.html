@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head(${pageTitle})}"></head>
+<body th:attr="data-page=${pageName},data-role-scope=${pageRole}">
+<main class="page-shell public-shell">
+    <section class="public-grid">
+        <div th:replace="~{fragments/common :: publicHeader('Trusted roadside support', 'Call Your Mechanic', 'Get verified mechanics, live updates, and vehicle-specific help in one place.')}"></div>
+        <section class="panel">
+            <div id="auth-banner" class="banner"></div>
+            <div class="field">
+                <label for="mobile">Enter Mobile Number</label>
+                <input id="mobile" type="tel" placeholder="+91 9876543210" autocomplete="tel">
+            </div>
+            <form id="otp-request-form">
+                <button class="btn btn-secondary" type="submit">Request OTP</button>
+            </form>
+            <div class="field">
+                <label for="otp">Enter OTP</label>
+                <input id="otp" type="text" inputmode="numeric" maxlength="6" placeholder="_ _ _ _ _ _">
+            </div>
+            <form id="otp-verify-form">
+                <button class="btn btn-primary" type="submit">Verify &amp; Continue</button>
+            </form>
+            <p class="helper-text">During development, OTP is logged by the backend after request.</p>
+        </section>
+    </section>
+</main>
+<div th:replace="~{fragments/common :: toastHost}"></div>
+<div th:replace="~{fragments/common :: appScript}"></div>
+</body>
+</html>
