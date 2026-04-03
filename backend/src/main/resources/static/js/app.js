@@ -338,17 +338,27 @@ async function initUserHomePage() {
     const setLocationButton = document.getElementById("set-location-button");
     const findButton = document.getElementById("find-mechanic-button");
 
-    const [servicesResponse, vehiclesResponse] = await Promise.all([
+    const [servicesResponse, vehiclesResponse, latestLocationResponse] = await Promise.all([
         apiGet("/api/v1/services", { auth: false }),
-        apiGet("/api/v1/vehicles")
+        apiGet("/api/v1/vehicles"),
+        apiGet("/api/v1/users/me/location/latest").catch(() => ({ data: null }))
     ]);
 
     const draft = getBookingDraft() || {};
     let selectedServiceId = draft.serviceId || null;
-    let location = draft.location || null;
+    let location = draft.location || (latestLocationResponse.data
+            ? {
+                lat: latestLocationResponse.data.latitude,
+                lng: latestLocationResponse.data.longitude
+            }
+            : null);
 
     if (location) {
         locationLabel.textContent = `${location.lat}, ${location.lng}`;
+        saveBookingDraft({
+            ...draft,
+            location
+        });
     }
 
     servicesResponse.data.forEach((service) => {
@@ -385,6 +395,12 @@ async function initUserHomePage() {
             await apiSend("/api/v1/users/me/location", "POST", {
                 latitude: location.lat,
                 longitude: location.lng
+            });
+            saveBookingDraft({
+                ...(getBookingDraft() || {}),
+                serviceId: selectedServiceId ? Number(selectedServiceId) : undefined,
+                vehicleId: vehicleSelect.value ? Number(vehicleSelect.value) : undefined,
+                location
             });
             showToast("Current location saved.", "success");
         } catch (error) {
@@ -491,7 +507,24 @@ async function initBookingPage() {
 }
 
 async function initTrackingPage() {
-    const bookingId = bookingIdFromPage || getActiveBookingId();
+    let bookingId = bookingIdFromPage;
+    if (!bookingId) {
+        try {
+            const activeBookingsResponse = await apiGet("/api/v1/bookings/active");
+            const activeBooking = activeBookingsResponse.data.find((booking) =>
+                    ["REQUESTED", "ACCEPTED", "ON_THE_WAY", "STARTED"].includes(booking.status)
+            );
+            if (activeBooking) {
+                bookingId = activeBooking.bookingId;
+                setActiveBookingId(bookingId);
+            } else {
+                bookingId = getActiveBookingId();
+            }
+        } catch (error) {
+            showBanner("tracking-banner", readApiError(error));
+            return;
+        }
+    }
     if (!bookingId) {
         showBanner("tracking-banner", "No active booking selected.");
         return;
@@ -743,6 +776,8 @@ async function initMechanicDashboardPage() {
     ]);
 
     const availability = document.getElementById("availability-toggle");
+    const locationLabel = document.getElementById("mechanic-location-label");
+    const setLocationButton = document.getElementById("set-mechanic-location-button");
     const currentBooking = activeBookingsResponse.data[0];
     document.getElementById("mechanic-name").textContent = profile.data.name;
     document.getElementById("earnings-total").textContent = formatCurrency(earningsResponse.data.totalEarnings);
@@ -750,6 +785,15 @@ async function initMechanicDashboardPage() {
     document.getElementById("availability-status").textContent = profile.data.available ? "ONLINE" : "OFFLINE";
     document.getElementById("current-booking-status").textContent = currentBooking ? currentBooking.status : "No active booking";
     availability.checked = Boolean(profile.data.available);
+
+    try {
+        const locationResponse = await apiGet("/api/v1/mechanics/me/location/latest");
+        if (locationResponse.data) {
+            locationLabel.textContent = `${locationResponse.data.latitude}, ${locationResponse.data.longitude}`;
+        }
+    } catch (error) {
+        locationLabel.textContent = "Location not captured yet";
+    }
 
     availability?.addEventListener("change", async () => {
         try {
@@ -760,6 +804,20 @@ async function initMechanicDashboardPage() {
             showToast("Availability updated.", "success");
         } catch (error) {
             availability.checked = !availability.checked;
+            showBanner("mechanic-dashboard-banner", readApiError(error));
+        }
+    });
+
+    setLocationButton?.addEventListener("click", async () => {
+        try {
+            const location = await withGeolocation();
+            await apiSend("/api/v1/mechanics/me/location", "POST", {
+                latitude: location.lat,
+                longitude: location.lng
+            });
+            locationLabel.textContent = `${location.lat}, ${location.lng}`;
+            showToast("Mechanic location saved.", "success");
+        } catch (error) {
             showBanner("mechanic-dashboard-banner", readApiError(error));
         }
     });

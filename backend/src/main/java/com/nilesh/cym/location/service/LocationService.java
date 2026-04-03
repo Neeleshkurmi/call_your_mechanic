@@ -136,27 +136,22 @@ public class LocationService {
     public BookingLocationSnapshotDto getLatestBookingLocation(Long bookingId, AuthenticatedUser authenticatedUser) {
         BookingEntity booking = findAuthorizedBooking(bookingId, authenticatedUser);
 
-        LocationResponseDto userLocation = userLiveLocationRepository.findTopByUser_IdOrderByRecordedAtDesc(booking.getUser().getId())
-                .map(saved -> new LocationResponseDto(
-                        saved.getUser().getId(),
-                        saved.getLatitude(),
-                        saved.getLongitude(),
-                        saved.getRecordedAt(),
-                        null
-                ))
-                .orElse(null);
-
-        LocationResponseDto mechanicLocation = mechanicLocationRepository.findTopByMechanic_IdOrderByRecordedAtDesc(booking.getMechanic().getId())
-                .map(saved -> new LocationResponseDto(
-                        saved.getMechanic().getId(),
-                        saved.getLatitude(),
-                        saved.getLongitude(),
-                        saved.getRecordedAt(),
-                        null
-                ))
-                .orElse(null);
+        LocationResponseDto userLocation = mapUserLocation(booking.getUser().getId());
+        LocationResponseDto mechanicLocation = mapMechanicLocation(booking.getMechanic().getId());
 
         return new BookingLocationSnapshotDto(booking.getId(), userLocation, mechanicLocation);
+    }
+
+    public LocationResponseDto getLatestUserLocation(AuthenticatedUser authenticatedUser) {
+        requireRole(authenticatedUser, UserRole.USER);
+        return mapUserLocation(authenticatedUser.userId());
+    }
+
+    public LocationResponseDto getLatestMechanicLocation(AuthenticatedUser authenticatedUser) {
+        requireRole(authenticatedUser, UserRole.MECHANIC);
+        MechanicEntity mechanic = mechanicRepository.findByUser_Id(authenticatedUser.userId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mechanic profile not found"));
+        return mapMechanicLocation(mechanic.getId());
     }
 
     public BookingLocationHistoryDto getBookingLocationHistory(Long bookingId, AuthenticatedUser authenticatedUser, Instant since, Integer limit) {
@@ -234,6 +229,30 @@ public class LocationService {
                 longitude,
                 recordedAt
         ));
+    }
+
+    private LocationResponseDto mapUserLocation(Long userId) {
+        return userLiveLocationRepository.findTopByUser_IdOrderByRecordedAtDesc(userId)
+                .map(saved -> new LocationResponseDto(
+                        saved.getUser().getId(),
+                        saved.getLatitude(),
+                        saved.getLongitude(),
+                        saved.getRecordedAt(),
+                        null
+                ))
+                .orElse(null);
+    }
+
+    private LocationResponseDto mapMechanicLocation(Long mechanicId) {
+        return mechanicLocationRepository.findTopByMechanic_IdOrderByRecordedAtDesc(mechanicId)
+                .map(saved -> new LocationResponseDto(
+                        saved.getMechanic().getId(),
+                        saved.getLatitude(),
+                        saved.getLongitude(),
+                        saved.getRecordedAt(),
+                        null
+                ))
+                .orElse(null);
     }
 
     private void requireRole(AuthenticatedUser authenticatedUser, UserRole requiredRole) {

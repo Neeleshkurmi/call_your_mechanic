@@ -40,6 +40,12 @@ public class PageViewController {
         return "pages/user-booking";
     }
 
+    @GetMapping({"/app/user/tracking", "/app/user/tracking/"})
+    public String liveTracking(Model model) {
+        populate(model, "Live Tracking", "user-tracking", "user");
+        return "pages/user-tracking";
+    }
+
     @GetMapping("/app/user/tracking/{bookingId}")
     public String liveTracking(@PathVariable Long bookingId, Model model) {
         populate(model, "Live Tracking", "user-tracking", "user");

@@ -22,7 +22,7 @@
 <th:block th:fragment="userNav(active)">
     <nav class="bottom-nav">
         <a th:href="@{/app/user/home}" th:classappend="${active == 'home'} ? ' active'">Home</a>
-        <a th:href="@{/app/user/nearby}" th:classappend="${active == 'nearby'} ? ' active'">Nearby</a>
+        <a th:href="@{/app/user/tracking}" th:classappend="${active == 'tracking'} ? ' active'">Bookings</a>
         <a th:href="@{/app/user/vehicles}" th:classappend="${active == 'vehicles'} ? ' active'">Vehicles</a>
         <a th:href="@{/app/user/profile}" th:classappend="${active == 'profile'} ? ' active'">Profile</a>
     </nav>

@@ -99,6 +99,30 @@ public class LocationController {
         return ResponseEntity.ok(ApiResponse.success("User location updated successfully", response));
     }
 
+    @GetMapping("/users/me/location/latest")
+    @Operation(summary = "Get current user's latest live location", description = "Returns the most recently saved live location for the authenticated user.")
+    public ResponseEntity<ApiResponse<LocationResponseDto>> getLatestUserLocation(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "User latest live location fetched successfully",
+                locationService.getLatestUserLocation(authenticatedUser)
+        ));
+    }
+
+    @GetMapping("/mechanics/me/location/latest")
+    @Operation(summary = "Get current mechanic's latest live location", description = "Returns the most recently saved live location for the authenticated mechanic.")
+    public ResponseEntity<ApiResponse<LocationResponseDto>> getLatestMechanicLocation(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Mechanic latest live location fetched successfully",
+                locationService.getLatestMechanicLocation(authenticatedUser)
+        ));
+    }
+
     @GetMapping("/bookings/{bookingId}/location/latest")
     @Operation(summary = "Get latest booking locations", description = "Returns latest user and mechanic locations for a booking if caller is one of the participants.")
     @ApiResponses({
