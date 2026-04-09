@@ -1,3 +1,6 @@
+server:
+  address : 0.0.0.0
+
 spring:
   application:
     name: call-your-mechanic
@@ -15,11 +18,11 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     show-sql: true
 
-#  sql:
-#    init:
-#      mode: always
-#  devtools:
-#    add-properties: false
+  sql:
+    init:
+      mode: always
+  devtools:
+    add-properties: false
 
 
   data:
