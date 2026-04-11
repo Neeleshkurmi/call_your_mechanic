@@ -65,6 +65,13 @@ public class PageViewController {
         return "pages/user-profile";
     }
 
+    @GetMapping("/app/user/rating/{bookingId}")
+    public String userRating(@PathVariable Long bookingId, Model model) {
+        populate(model, "Rate Mechanic", "user-rating", "user");
+        model.addAttribute("bookingId", bookingId);
+        return "pages/user-rating";
+    }
+
     @GetMapping({"/app/mechanic/register", "/app/mechanic/register/"})
     public String mechanicRegister(Model model) {
         populate(model, "Become a Mechanic", "mechanic-register", "mechanic");

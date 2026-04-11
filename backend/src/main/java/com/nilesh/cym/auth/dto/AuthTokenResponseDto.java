@@ -18,6 +18,8 @@ public class AuthTokenResponseDto {
     private String mobile;
     @Schema(description = "Role assigned to the authenticated user.", example = "USER")
     private UserRole role;
+    @Schema(description = "Whether the user has already finished the one-time post-login profile setup.", example = "false")
+    private boolean profileCompleted;
 
     public String getAccessToken() {
         return accessToken;
@@ -65,5 +67,13 @@ public class AuthTokenResponseDto {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public boolean isProfileCompleted() {
+        return profileCompleted;
+    }
+
+    public void setProfileCompleted(boolean profileCompleted) {
+        this.profileCompleted = profileCompleted;
     }
 }

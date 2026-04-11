@@ -5,6 +5,7 @@ import com.nilesh.cym.booking.dto.BookingStatusUpdateRequestDto;
 import com.nilesh.cym.booking.dto.CreateBookingRequestDto;
 import com.nilesh.cym.entity.BookingEntity;
 import com.nilesh.cym.entity.MechanicEntity;
+import com.nilesh.cym.entity.MechanicLocationEntity;
 import com.nilesh.cym.entity.ServiceEntity;
 import com.nilesh.cym.entity.UserEntity;
 import com.nilesh.cym.entity.VehicleEntity;
@@ -12,7 +13,9 @@ import com.nilesh.cym.entity.enums.BookingStatus;
 import com.nilesh.cym.entity.enums.UserRole;
 import com.nilesh.cym.logging.LogSanitizer;
 import com.nilesh.cym.repository.BookingRepository;
+import com.nilesh.cym.repository.MechanicLocationRepository;
 import com.nilesh.cym.repository.MechanicRepository;
+import com.nilesh.cym.repository.ReviewRepository;
 import com.nilesh.cym.repository.ServiceRepository;
 import com.nilesh.cym.repository.UserRepository;
 import com.nilesh.cym.repository.VehicleRepository;
@@ -22,6 +25,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -30,24 +35,33 @@ import java.util.Set;
 @Service
 public class BookingService {
 
+    private static final double EARTH_RADIUS_KM = 6371.0;
+    private static final double TRAVEL_RATE_PER_KM = 18.0;
+
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final MechanicRepository mechanicRepository;
+    private final MechanicLocationRepository mechanicLocationRepository;
     private final VehicleRepository vehicleRepository;
     private final ServiceRepository serviceRepository;
+    private final ReviewRepository reviewRepository;
 
     public BookingService(
             BookingRepository bookingRepository,
             UserRepository userRepository,
             MechanicRepository mechanicRepository,
+            MechanicLocationRepository mechanicLocationRepository,
             VehicleRepository vehicleRepository,
-            ServiceRepository serviceRepository
+            ServiceRepository serviceRepository,
+            ReviewRepository reviewRepository
     ) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.mechanicRepository = mechanicRepository;
+        this.mechanicLocationRepository = mechanicLocationRepository;
         this.vehicleRepository = vehicleRepository;
         this.serviceRepository = serviceRepository;
+        this.reviewRepository = reviewRepository;
     }
 
     public BookingResponseDto createBooking(AuthenticatedUser authenticatedUser, CreateBookingRequestDto request) {
@@ -77,15 +91,7 @@ public class BookingService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mechanic is currently unavailable");
         }
 
-        BookingEntity booking = new BookingEntity();
-        booking.setUser(user);
-        booking.setMechanic(mechanic);
-        booking.setVehicle(vehicle);
-        booking.setService(service);
-        booking.setStatus(BookingStatus.REQUESTED);
-        booking.setBookingTime(Instant.now());
-        booking.setLatitude(request.latitude());
-        booking.setLongitude(request.longitude());
+        BookingEntity booking = prepareBooking(user, mechanic, vehicle, service, request.latitude(), request.longitude(), Instant.now());
 
         BookingEntity saved = bookingRepository.save(booking);
         log.info("booking_create_success bookingId={} userId={} mechanicId={} serviceId={} status={}",
@@ -190,16 +196,42 @@ public class BookingService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mechanic is currently unavailable");
         }
 
-        BookingEntity booking = new BookingEntity();
-        booking.setUser(original.getUser());
-        booking.setMechanic(mechanic);
-        booking.setVehicle(original.getVehicle());
-        booking.setService(original.getService());
-        booking.setStatus(BookingStatus.REQUESTED);
-        booking.setBookingTime(Instant.now());
-        booking.setLatitude(original.getLatitude());
-        booking.setLongitude(original.getLongitude());
+        BookingEntity booking = prepareBooking(
+                original.getUser(),
+                mechanic,
+                original.getVehicle(),
+                original.getService(),
+                original.getLatitude(),
+                original.getLongitude(),
+                Instant.now()
+        );
         return toResponse(bookingRepository.save(booking));
+    }
+
+    private BookingEntity prepareBooking(
+            UserEntity user,
+            MechanicEntity mechanic,
+            VehicleEntity vehicle,
+            ServiceEntity service,
+            Double latitude,
+            Double longitude,
+            Instant bookingTime
+    ) {
+        FareBreakdown fareBreakdown = calculateFareBreakdown(mechanic, service, latitude, longitude);
+        BookingEntity booking = new BookingEntity();
+        booking.setUser(user);
+        booking.setMechanic(mechanic);
+        booking.setVehicle(vehicle);
+        booking.setService(service);
+        booking.setStatus(BookingStatus.REQUESTED);
+        booking.setBookingTime(bookingTime);
+        booking.setLatitude(latitude);
+        booking.setLongitude(longitude);
+        booking.setTravelDistanceKm(fareBreakdown.travelDistanceKm());
+        booking.setTravelCharge(fareBreakdown.travelCharge());
+        booking.setServiceCharge(fareBreakdown.serviceCharge());
+        booking.setTotalFare(fareBreakdown.totalFare());
+        return booking;
     }
 
     private MechanicEntity findMechanicByUserId(Long userId) {
@@ -286,6 +318,7 @@ public class BookingService {
     }
 
     private BookingResponseDto toResponse(BookingEntity booking) {
+        FareBreakdown fareBreakdown = resolveFareBreakdown(booking);
         return new BookingResponseDto(
                 booking.getId(),
                 booking.getUser().getId(),
@@ -295,7 +328,82 @@ public class BookingService {
                 booking.getStatus(),
                 booking.getBookingTime(),
                 booking.getLatitude(),
-                booking.getLongitude()
+                booking.getLongitude(),
+                fareBreakdown.travelDistanceKm(),
+                fareBreakdown.travelCharge(),
+                fareBreakdown.serviceCharge(),
+                fareBreakdown.totalFare(),
+                reviewRepository.existsByBooking_Id(booking.getId())
         );
+    }
+
+    private FareBreakdown resolveFareBreakdown(BookingEntity booking) {
+        Double travelDistanceKm = booking.getTravelDistanceKm();
+        Double travelCharge = booking.getTravelCharge();
+        Double serviceCharge = booking.getServiceCharge();
+        Double totalFare = booking.getTotalFare();
+
+        if (travelDistanceKm != null && travelCharge != null && serviceCharge != null && totalFare != null) {
+            return new FareBreakdown(
+                    roundMoney(travelDistanceKm),
+                    roundMoney(travelCharge),
+                    roundMoney(serviceCharge),
+                    roundMoney(totalFare)
+            );
+        }
+
+        return calculateFareBreakdown(booking.getMechanic(), booking.getService(), booking.getLatitude(), booking.getLongitude());
+    }
+
+    private FareBreakdown calculateFareBreakdown(MechanicEntity mechanic, ServiceEntity service, Double userLatitude, Double userLongitude) {
+        MechanicLocationEntity mechanicLocation = mechanicLocationRepository.findTopByMechanic_IdOrderByRecordedAtDesc(mechanic.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mechanic location unavailable for fare calculation"));
+        double distanceKm = calculateDistanceKm(
+                mechanicLocation.getLatitude(),
+                mechanicLocation.getLongitude(),
+                userLatitude,
+                userLongitude
+        );
+        double roundedDistance = roundMoney(distanceKm);
+        double serviceCharge = resolveServiceCharge(service);
+        double travelCharge = roundMoney(roundedDistance * TRAVEL_RATE_PER_KM);
+        double totalFare = roundMoney(serviceCharge + travelCharge);
+        return new FareBreakdown(roundedDistance, travelCharge, serviceCharge, totalFare);
+    }
+
+    private double resolveServiceCharge(ServiceEntity service) {
+        if (service.getServiceCharge() != null) {
+            return roundMoney(service.getServiceCharge());
+        }
+        return switch (service.getVehicleType()) {
+            case BIKE -> 299D;
+            case CAR -> 499D;
+            case TRUCK -> 899D;
+            case ALL -> 399D;
+        };
+    }
+
+    private double calculateDistanceKm(Double startLat, Double startLng, Double endLat, Double endLng) {
+        double dLat = Math.toRadians(endLat - startLat);
+        double dLng = Math.toRadians(endLng - startLng);
+        double originLat = Math.toRadians(startLat);
+        double targetLat = Math.toRadians(endLat);
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(originLat) * Math.cos(targetLat) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return EARTH_RADIUS_KM * c;
+    }
+
+    private double roundMoney(double value) {
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    private record FareBreakdown(
+            Double travelDistanceKm,
+            Double travelCharge,
+            Double serviceCharge,
+            Double totalFare
+    ) {
     }
 }

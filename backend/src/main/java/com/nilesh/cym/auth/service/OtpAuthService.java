@@ -220,6 +220,7 @@ public class OtpAuthService {
         response.setUserId(user.getId());
         response.setMobile(user.getMob());
         response.setRole(user.getRole());
+        response.setProfileCompleted(user.isProfileCompleted());
         log.info("otp_verify_success mobile={} userId={} role={} refreshJti={}",
                 LogSanitizer.maskMobile(normalizedMobile),
                 user.getId(),
@@ -242,6 +243,7 @@ public class OtpAuthService {
         userEntity.setMob(mobile);
         userEntity.setRole(role);
         userEntity.setName("User " + mobile.substring(Math.max(0, mobile.length() - 4)));
+        userEntity.setProfileCompleted(false);
         UserEntity saved = userRepository.save(userEntity);
         log.info("user_created_from_otp userId={} mobile={} role={}",
                 saved.getId(),

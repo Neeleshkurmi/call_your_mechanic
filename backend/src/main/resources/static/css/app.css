@@ -264,6 +264,32 @@ textarea:focus {
     padding: 1rem;
 }
 
+.fare-summary {
+    margin: 1.25rem 0;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.fare-summary.compact {
+    margin: 1rem 0;
+}
+
+.fare-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.45rem 0;
+}
+
+.fare-row.total {
+    margin-top: 0.4rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--line);
+    font-size: 1.05rem;
+}
+
 .service-option.selected,
 .vehicle-option.selected,
 .mechanic-card.selected {

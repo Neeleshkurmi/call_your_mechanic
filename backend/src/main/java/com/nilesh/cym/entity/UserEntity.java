@@ -25,6 +25,9 @@ public class UserEntity extends AuditableEntity {
     @Column(nullable = false, length = 20)
     private UserRole role;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean profileCompleted = false;
+
     public String getName() {
         return name;
     }
@@ -47,5 +50,13 @@ public class UserEntity extends AuditableEntity {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public boolean isProfileCompleted() {
+        return profileCompleted;
+    }
+
+    public void setProfileCompleted(boolean profileCompleted) {
+        this.profileCompleted = profileCompleted;
     }
 }

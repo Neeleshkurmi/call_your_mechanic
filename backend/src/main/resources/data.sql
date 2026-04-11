@@ -1,22 +1,23 @@
-INSERT INTO users (id, created_at, updated_at, name, mob, role)
+INSERT INTO users (id, created_at, updated_at, name, mob, role, profile_completed)
 VALUES
-    (1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Test User', '+919900000001', 'USER'),
-    (2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Test Mechanic User', '+919900000002', 'MECHANIC'),
-    (3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Backup User', '+919900000003', 'USER'),
-    (4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Amit Garage', '+919900000004', 'MECHANIC'),
-    (5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Rahul Auto Care', '+919900000005', 'MECHANIC'),
-    (6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Vikram Wheels', '+919900000006', 'MECHANIC'),
-    (7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Suresh Roadside', '+919900000007', 'MECHANIC'),
-    (8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Arjun Motors', '+919900000008', 'MECHANIC'),
-    (9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Deepak Workshop', '+919900000009', 'MECHANIC'),
-    (10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Rakesh Service Point', '+919900000010', 'MECHANIC'),
-    (11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Manoj Mobile Mechanic', '+919900000011', 'MECHANIC'),
-    (12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Karan Quick Fix', '+919900000012', 'MECHANIC')
+    (1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Test User', '+919900000001', 'USER', TRUE),
+    (2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Test Mechanic User', '+919900000002', 'MECHANIC', TRUE),
+    (3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Backup User', '+919900000003', 'USER', TRUE),
+    (4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Amit Garage', '+919900000004', 'MECHANIC', TRUE),
+    (5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Rahul Auto Care', '+919900000005', 'MECHANIC', TRUE),
+    (6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Vikram Wheels', '+919900000006', 'MECHANIC', TRUE),
+    (7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Suresh Roadside', '+919900000007', 'MECHANIC', TRUE),
+    (8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Arjun Motors', '+919900000008', 'MECHANIC', TRUE),
+    (9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Deepak Workshop', '+919900000009', 'MECHANIC', TRUE),
+    (10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Rakesh Service Point', '+919900000010', 'MECHANIC', TRUE),
+    (11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Manoj Mobile Mechanic', '+919900000011', 'MECHANIC', TRUE),
+    (12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'Karan Quick Fix', '+919900000012', 'MECHANIC', TRUE)
 ON CONFLICT (id) DO UPDATE SET
     updated_at = CURRENT_TIMESTAMP,
     name = EXCLUDED.name,
     mob = EXCLUDED.mob,
-    role = EXCLUDED.role;
+    role = EXCLUDED.role,
+    profile_completed = EXCLUDED.profile_completed;
 
 INSERT INTO mechanics (id, created_at, updated_at, user_id, is_available, experience_years, rating, bio, skills)
 VALUES
@@ -39,16 +40,17 @@ ON CONFLICT (id) DO UPDATE SET
     bio = EXCLUDED.bio,
     skills = EXCLUDED.skills;
 
-INSERT INTO services (id, name, description, vehicle_type)
+INSERT INTO services (id, name, description, vehicle_type, service_charge)
 VALUES
-    (1, 'Flat Tyre Repair', 'On-site puncture repair and tyre inflation.', 'BIKE'),
-    (2, 'Battery Jump Start', 'Quick jump start service for dead batteries.', 'CAR'),
-    (3, 'Engine Diagnostics', 'Basic engine health and fault-code diagnostics.', 'CAR'),
-    (4, 'Chain Adjustment', 'Chain tightening and lubrication for bikes.', 'BIKE')
+    (1, 'Flat Tyre Repair', 'On-site puncture repair and tyre inflation.', 'BIKE', 299.0),
+    (2, 'Battery Jump Start', 'Quick jump start service for dead batteries.', 'CAR', 499.0),
+    (3, 'Engine Diagnostics', 'Basic engine health and fault-code diagnostics.', 'CAR', 699.0),
+    (4, 'Chain Adjustment', 'Chain tightening and lubrication for bikes.', 'BIKE', 249.0)
 ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
-    vehicle_type = EXCLUDED.vehicle_type;
+    vehicle_type = EXCLUDED.vehicle_type,
+    service_charge = EXCLUDED.service_charge;
 
 INSERT INTO vehicles (id, created_at, updated_at, user_id, vehicle_type, brand, model, registration_number)
 VALUES
@@ -62,10 +64,10 @@ ON CONFLICT (id) DO UPDATE SET
     model = EXCLUDED.model,
     registration_number = EXCLUDED.registration_number;
 
-INSERT INTO bookings (id, created_at, updated_at, mechanic_id, user_id, vehicle_id, service_id, status, booking_time, latitude, longitude)
+INSERT INTO bookings (id, created_at, updated_at, mechanic_id, user_id, vehicle_id, service_id, status, booking_time, latitude, longitude, travel_distance_km, travel_charge, service_charge, total_fare)
 VALUES
-    (1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, 1, 1, 1, 'REQUESTED', CURRENT_TIMESTAMP - INTERVAL '30 minutes', 18.5204, 73.8567),
-    (2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, 1, 1, 4, 'ACCEPTED', CURRENT_TIMESTAMP - INTERVAL '2 hours', 18.5310, 73.8440)
+    (1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, 1, 1, 1, 'REQUESTED', CURRENT_TIMESTAMP - INTERVAL '30 minutes', 18.5204, 73.8567, 4.5, 81.0, 299.0, 380.0),
+    (2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, 1, 1, 4, 'ACCEPTED', CURRENT_TIMESTAMP - INTERVAL '2 hours', 18.5310, 73.8440, 5.2, 93.6, 249.0, 342.6)
 ON CONFLICT (id) DO UPDATE SET
     updated_at = CURRENT_TIMESTAMP,
     mechanic_id = EXCLUDED.mechanic_id,
@@ -75,7 +77,11 @@ ON CONFLICT (id) DO UPDATE SET
     status = EXCLUDED.status,
     booking_time = EXCLUDED.booking_time,
     latitude = EXCLUDED.latitude,
-    longitude = EXCLUDED.longitude;
+    longitude = EXCLUDED.longitude,
+    travel_distance_km = EXCLUDED.travel_distance_km,
+    travel_charge = EXCLUDED.travel_charge,
+    service_charge = EXCLUDED.service_charge,
+    total_fare = EXCLUDED.total_fare;
 
 INSERT INTO mechanic_locations (id, mechanic_id, latitude, longitude, recorded_at)
 VALUES

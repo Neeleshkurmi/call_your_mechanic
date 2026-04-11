@@ -59,6 +59,7 @@ public class UserProfileService {
 
         user.setName(normalizedName);
         user.setRole(selectedRole);
+        user.setProfileCompleted(true);
         UserEntity savedUser = userRepository.save(user);
         log.info("profile_update_persisted userId={} newRole={} name={}", savedUser.getId(), savedUser.getRole(), savedUser.getName());
 
@@ -74,7 +75,8 @@ public class UserProfileService {
                         savedUser.getId(),
                         savedUser.getName(),
                         savedUser.getMob(),
-                        savedUser.getRole()
+                        savedUser.getRole(),
+                        savedUser.isProfileCompleted()
                 ),
                 tokenPair.accessToken(),
                 tokenPair.refreshToken(),
@@ -91,7 +93,7 @@ public class UserProfileService {
         user.setName(normalizeName(request.name()));
         user.setRole(validateSelectableRole(request.role()));
         UserEntity saved = userRepository.save(user);
-        return new CurrentUserProfileDto(saved.getId(), saved.getName(), saved.getMob(), saved.getRole());
+        return new CurrentUserProfileDto(saved.getId(), saved.getName(), saved.getMob(), saved.getRole(), saved.isProfileCompleted());
     }
 
     @Transactional
@@ -99,7 +101,7 @@ public class UserProfileService {
         requireAuthenticatedUser(authenticatedUser);
         UserEntity user = userRepository.findById(authenticatedUser.userId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        return new CurrentUserProfileDto(user.getId(), user.getName(), user.getMob(), user.getRole());
+        return new CurrentUserProfileDto(user.getId(), user.getName(), user.getMob(), user.getRole(), user.isProfileCompleted());
     }
 
     private void requireAuthenticatedUser(AuthenticatedUser authenticatedUser) {

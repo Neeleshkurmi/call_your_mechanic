@@ -6,6 +6,7 @@ import com.nilesh.cym.entity.ServiceEntity;
 import com.nilesh.cym.entity.enums.VehicleType;
 import com.nilesh.cym.repository.ServiceRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,6 +23,7 @@ public class ServiceCatalogService {
         this.serviceRepository = serviceRepository;
     }
 
+    @Cacheable(cacheNames = "services:list", key = "#vehicleType == null ? 'ALL' : #vehicleType.name()")
     public List<ServiceResponseDto> findServices(VehicleType vehicleType) {
         log.debug("service_list_start vehicleType={}", vehicleType);
         List<ServiceEntity> services = vehicleType == null
@@ -33,6 +35,7 @@ public class ServiceCatalogService {
         return responses;
     }
 
+    @Cacheable(cacheNames = "services:detail", key = "#serviceId")
     public ServiceResponseDto findServiceById(Long serviceId) {
         log.debug("service_fetch_start serviceId={}", serviceId);
         ServiceEntity service = serviceRepository.findById(serviceId)
@@ -42,15 +45,11 @@ public class ServiceCatalogService {
         return response;
     }
 
+    @Cacheable(cacheNames = "services:estimate", key = "#serviceId")
     public ServiceEstimateResponseDto estimateByServiceId(Long serviceId) {
         ServiceEntity service = serviceRepository.findById(serviceId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found"));
-        double amount = switch (service.getVehicleType()) {
-            case BIKE -> 299D;
-            case CAR -> 499D;
-            case TRUCK -> 899D;
-            case ALL -> 399D;
-        };
+        double amount = resolveServiceCharge(service);
         int duration = switch (service.getVehicleType()) {
             case BIKE -> 25;
             case CAR -> 40;
@@ -65,7 +64,21 @@ public class ServiceCatalogService {
                 entity.getId(),
                 entity.getName(),
                 entity.getDescription(),
-                entity.getVehicleType()
+                entity.getVehicleType(),
+                resolveServiceCharge(entity)
         );
+    }
+
+    private double resolveServiceCharge(ServiceEntity service) {
+        if (service.getServiceCharge() != null) {
+            return service.getServiceCharge();
+        }
+
+        return switch (service.getVehicleType()) {
+            case BIKE -> 299D;
+            case CAR -> 499D;
+            case TRUCK -> 899D;
+            case ALL -> 399D;
+        };
     }
 }

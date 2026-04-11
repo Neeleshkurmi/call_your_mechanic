@@ -47,6 +47,19 @@ public class ReviewController {
         ));
     }
 
+    @GetMapping("/bookings/{id}/review")
+    @Operation(summary = "Get booking review")
+    public ResponseEntity<ApiResponse<ReviewResponseDto>> getBookingReview(
+            @PathVariable Long id,
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Review fetched successfully",
+                reviewService.getBookingReview(id, authenticatedUser)
+        ));
+    }
+
     @GetMapping("/mechanics/{id}/reviews")
     @Operation(summary = "Get mechanic reviews")
     public ResponseEntity<ApiResponse<MechanicReviewsResponseDto>> getMechanicReviews(@PathVariable Long id) {

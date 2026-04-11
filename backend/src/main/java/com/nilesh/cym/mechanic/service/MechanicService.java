@@ -21,6 +21,9 @@ import com.nilesh.cym.token.JwtService;
 import com.nilesh.cym.token.RefreshTokenEntity;
 import com.nilesh.cym.token.RefreshTokenRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -117,6 +120,7 @@ public class MechanicService {
                 .toList();
     }
 
+    @Cacheable(cacheNames = "mechanics:detail", key = "#mechanicId")
     @Transactional(readOnly = true)
     public MechanicProfileResponseDto getMechanicDetails(Long mechanicId) {
         return toProfileResponse(fetchMechanicWithUser(mechanicId));
@@ -128,6 +132,9 @@ public class MechanicService {
         return toProfileResponse(fetchMechanicByUserId(mechanicUserId));
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "mechanics:detail", key = "#result.mechanicId()", condition = "#result != null")
+    })
     @Transactional
     public MechanicProfileResponseDto updateAvailability(AuthenticatedUser authenticatedUser, MechanicAvailabilityRequestDto request) {
         Long mechanicUserId = requireRole(authenticatedUser, UserRole.MECHANIC);
@@ -136,6 +143,9 @@ public class MechanicService {
         return toProfileResponse(mechanicRepository.save(mechanic));
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "mechanics:detail", key = "#result.mechanicId()", condition = "#result != null")
+    })
     @Transactional
     public MechanicProfileResponseDto updateProfile(AuthenticatedUser authenticatedUser, MechanicProfileRequestDto request) {
         Long mechanicUserId = requireRole(authenticatedUser, UserRole.MECHANIC);
@@ -150,8 +160,14 @@ public class MechanicService {
     public MechanicEarningsResponseDto getEarnings(AuthenticatedUser authenticatedUser) {
         Long mechanicUserId = requireRole(authenticatedUser, UserRole.MECHANIC);
         MechanicEntity mechanic = fetchMechanicByUserId(mechanicUserId);
-        int completedJobs = bookingRepository.findByMechanic_IdAndStatusOrderByBookingTimeDesc(mechanic.getId(), BookingStatus.COMPLETED).size();
-        double total = completedJobs * 499D;
+        List<com.nilesh.cym.entity.BookingEntity> completedBookings =
+                bookingRepository.findByMechanic_IdAndStatusOrderByBookingTimeDesc(mechanic.getId(), BookingStatus.COMPLETED);
+        int completedJobs = completedBookings.size();
+        double total = completedBookings.stream()
+                .map(com.nilesh.cym.entity.BookingEntity::getTotalFare)
+                .filter(Objects::nonNull)
+                .mapToDouble(Double::doubleValue)
+                .sum();
         return new MechanicEarningsResponseDto(mechanic.getId(), completedJobs, total);
     }
 

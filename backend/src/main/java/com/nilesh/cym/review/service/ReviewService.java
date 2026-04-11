@@ -14,6 +14,9 @@ import com.nilesh.cym.review.dto.MechanicReviewsResponseDto;
 import com.nilesh.cym.review.dto.ReviewRequestDto;
 import com.nilesh.cym.review.dto.ReviewResponseDto;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +44,10 @@ public class ReviewService {
         this.mechanicRepository = mechanicRepository;
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "mechanics:reviews", key = "#result.mechanicId()", condition = "#result != null"),
+            @CacheEvict(cacheNames = "mechanics:detail", key = "#result.mechanicId()", condition = "#result != null")
+    })
     @Transactional
     public ReviewResponseDto createReview(Long bookingId, AuthenticatedUser authenticatedUser, ReviewRequestDto request) {
         Long userId = requireUser(authenticatedUser);
@@ -66,6 +73,17 @@ public class ReviewService {
         return toResponse(saved);
     }
 
+    @Transactional(readOnly = true)
+    public ReviewResponseDto getBookingReview(Long bookingId, AuthenticatedUser authenticatedUser) {
+        Long userId = requireUser(authenticatedUser);
+        BookingEntity booking = bookingRepository.findByIdAndUser_Id(bookingId, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+        ReviewEntity review = reviewRepository.findByBooking_Id(booking.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Review not found"));
+        return toResponse(review);
+    }
+
+    @Cacheable(cacheNames = "mechanics:reviews", key = "#mechanicId")
     @Transactional(readOnly = true)
     public MechanicReviewsResponseDto getMechanicReviews(Long mechanicId) {
         mechanicRepository.findById(mechanicId)

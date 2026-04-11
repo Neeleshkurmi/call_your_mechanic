@@ -24,6 +24,9 @@ public class ServiceEntity extends BaseEntity {
     @Column(name = "vehicle_type", nullable = false, length = 20)
     private VehicleType vehicleType;
 
+    @Column(name = "service_charge")
+    private Double serviceCharge;
+
     public String getName() {
         return name;
     }
@@ -46,5 +49,13 @@ public class ServiceEntity extends BaseEntity {
 
     public void setVehicleType(VehicleType vehicleType) {
         this.vehicleType = vehicleType;
+    }
+
+    public Double getServiceCharge() {
+        return serviceCharge;
+    }
+
+    public void setServiceCharge(Double serviceCharge) {
+        this.serviceCharge = serviceCharge;
     }
 }

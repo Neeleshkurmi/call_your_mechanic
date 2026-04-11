@@ -50,6 +50,18 @@ public class BookingEntity extends AuditableEntity {
     @Column(nullable = false)
     private Double longitude; // Initial service point longitude captured at booking creation.
 
+    @Column(name = "travel_distance_km")
+    private Double travelDistanceKm;
+
+    @Column(name = "travel_charge")
+    private Double travelCharge;
+
+    @Column(name = "service_charge")
+    private Double serviceCharge;
+
+    @Column(name = "total_fare")
+    private Double totalFare;
+
     public MechanicEntity getMechanic() {
         return mechanic;
     }
@@ -112,5 +124,37 @@ public class BookingEntity extends AuditableEntity {
 
     public void setLongitude(Double longitude) {
         this.longitude = longitude;
+    }
+
+    public Double getTravelDistanceKm() {
+        return travelDistanceKm;
+    }
+
+    public void setTravelDistanceKm(Double travelDistanceKm) {
+        this.travelDistanceKm = travelDistanceKm;
+    }
+
+    public Double getTravelCharge() {
+        return travelCharge;
+    }
+
+    public void setTravelCharge(Double travelCharge) {
+        this.travelCharge = travelCharge;
+    }
+
+    public Double getServiceCharge() {
+        return serviceCharge;
+    }
+
+    public void setServiceCharge(Double serviceCharge) {
+        this.serviceCharge = serviceCharge;
+    }
+
+    public Double getTotalFare() {
+        return totalFare;
+    }
+
+    public void setTotalFare(Double totalFare) {
+        this.totalFare = totalFare;
     }
 }

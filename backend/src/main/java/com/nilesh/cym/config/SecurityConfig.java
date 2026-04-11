@@ -72,7 +72,9 @@ public class SecurityConfig {
                 "http://10.0.2.2:*",
                 "http://localhost:*",
                 "http://localhost:8081",
-                "http://127.0.0.1:*"
+                "http://127.0.0.1:*",
+                "https://id-preview--0d0b2749-6fd4-4b84-b1df-383cc6da4bc9.lovable.app",
+                "*"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));

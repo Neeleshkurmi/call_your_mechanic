@@ -12,6 +12,8 @@ public record CurrentUserProfileDto(
         @Schema(description = "Verified mobile number of the current user.", example = "+919876543210")
         String mobile,
         @Schema(description = "Current role assigned to the user.", example = "MECHANIC")
-        UserRole role
+        UserRole role,
+        @Schema(description = "Whether the user has already finished the one-time post-login profile setup.", example = "true")
+        boolean profileCompleted
 ) {
 }

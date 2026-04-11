@@ -17,6 +17,7 @@ const body = document.body;
 const page = body.dataset.page;
 const roleScope = body.dataset.roleScope;
 const bookingIdFromPage = body.dataset.bookingId;
+const TRAVEL_RATE_PER_KM = 18;
 
 let mechanicProfileCache = null;
 
@@ -57,7 +58,16 @@ async function runPage() {
     const user = await hydrateCurrentUser();
 
     if (page === "profile-setup") {
+        if (user.profileCompleted) {
+            await routeAuthenticatedUser(user);
+            return;
+        }
         await initProfileSetupPage(user);
+        return;
+    }
+
+    if (!user.profileCompleted) {
+        window.location.href = "/profile/setup";
         return;
     }
 
@@ -88,6 +98,7 @@ async function runPage() {
         "user-nearby": initNearbyPage,
         "user-booking": initBookingPage,
         "user-tracking": initTrackingPage,
+        "user-rating": initUserRatingPage,
         "user-vehicles": initVehiclesPage,
         "user-profile": initUserProfilePage,
         "mechanic-register": initMechanicRegistrationPage,
@@ -111,6 +122,11 @@ async function hydrateCurrentUser() {
 }
 
 async function routeAuthenticatedUser(user, fromLogin = false) {
+    if (!user.profileCompleted) {
+        window.location.href = "/profile/setup";
+        return;
+    }
+
     if (user.role === "MECHANIC") {
         const mechanicProfile = await getMechanicProfile();
         window.location.href = mechanicProfile ? "/app/mechanic/dashboard" : "/app/mechanic/register";
@@ -204,6 +220,11 @@ function formatCurrency(value) {
     }).format(numeric);
 }
 
+function calculateTravelEstimate(distanceKm) {
+    const distance = Number(distanceKm || 0);
+    return Number((distance * TRAVEL_RATE_PER_KM).toFixed(2));
+}
+
 function statusClass(status) {
     if (["COMPLETED"].includes(status)) {
         return "success";
@@ -275,9 +296,15 @@ async function initLoginPage() {
                 user: {
                     userId: response.data.userId,
                     mobile: response.data.mobile,
-                    role: response.data.role
+                    role: response.data.role,
+                    profileCompleted: response.data.profileCompleted
                 }
             });
+
+            if (response.data.profileCompleted) {
+                await routeAuthenticatedUser(response.data, true);
+                return;
+            }
 
             window.location.href = "/profile/setup";
         } catch (error) {
@@ -368,7 +395,10 @@ async function initUserHomePage() {
         button.innerHTML = `
             <div class="service-name">${service.name}</div>
             <div class="muted">${service.description}</div>
-            <div class="badge-row"><span class="pill">${service.vehicleType}</span></div>
+            <div class="badge-row">
+                <span class="pill">${service.vehicleType}</span>
+                <span class="pill">${formatCurrency(service.serviceCharge)}</span>
+            </div>
         `;
         button.addEventListener("click", () => {
             selectedServiceId = service.id;
@@ -456,7 +486,8 @@ async function initNearbyPage() {
             saveBookingDraft({
                 ...draft,
                 mechanicId: mechanic.mechanicId,
-                mechanicName: mechanic.name
+                mechanicName: mechanic.name,
+                mechanicDistanceKm: mechanic.distanceKm
             });
             window.location.href = "/app/user/booking";
         });
@@ -482,6 +513,12 @@ async function initBookingPage() {
     document.getElementById("booking-service").textContent = serviceResponse.data.name;
     document.getElementById("booking-vehicle").textContent = vehicle ? `${vehicle.brand} ${vehicle.model}` : "Selected vehicle";
     document.getElementById("booking-location").textContent = `${draft.location.lat}, ${draft.location.lng}`;
+    document.getElementById("booking-service-charge").textContent = formatCurrency(serviceResponse.data.serviceCharge);
+    document.getElementById("booking-travel-distance").textContent = `${Number(draft.mechanicDistanceKm || 0).toFixed(2)} km`;
+    document.getElementById("booking-travel-charge").textContent = formatCurrency(calculateTravelEstimate(draft.mechanicDistanceKm));
+    document.getElementById("booking-total-fare").textContent = formatCurrency(
+            Number(serviceResponse.data.serviceCharge || 0) + calculateTravelEstimate(draft.mechanicDistanceKm)
+    );
 
     const button = document.getElementById("confirm-booking-button");
     button?.addEventListener("click", async () => {
@@ -538,13 +575,24 @@ async function initTrackingPage() {
     const timelineEl = document.getElementById("tracking-history");
     const cancelButton = document.getElementById("cancel-booking-button");
     const callButton = document.getElementById("call-mechanic-button");
+    const serviceChargeEl = document.getElementById("tracking-service-charge");
+    const travelChargeEl = document.getElementById("tracking-travel-charge");
+    const totalFareEl = document.getElementById("tracking-total-fare");
 
     const bookingResponse = await apiGet(`/api/v1/bookings/${bookingId}`);
+    if (bookingResponse.data.status === "COMPLETED" && !bookingResponse.data.reviewSubmitted) {
+        window.location.href = `/app/user/rating/${bookingId}`;
+        return;
+    }
     const mechanicResponse = await apiGet(`/api/v1/mechanics/${bookingResponse.data.mechanicId}`);
     mechanicEl.textContent = mechanicResponse.data.name;
     statusEl.textContent = bookingResponse.data.status;
     statusEl.className = `status-chip ${statusClass(bookingResponse.data.status)}`;
     etaEl.textContent = estimateEta(bookingResponse.data.status);
+    serviceChargeEl.textContent = formatCurrency(bookingResponse.data.serviceCharge);
+    travelChargeEl.textContent = formatCurrency(bookingResponse.data.travelCharge);
+    totalFareEl.textContent = formatCurrency(bookingResponse.data.totalFare);
+    cancelButton.hidden = !["REQUESTED", "ACCEPTED", "ON_THE_WAY", "STARTED"].includes(bookingResponse.data.status);
     if (mechanicResponse.data.mobile) {
         callButton.href = `tel:${mechanicResponse.data.mobile}`;
     }
@@ -612,6 +660,66 @@ async function initTrackingPage() {
     } catch (error) {
         showToast("Live stream unavailable, showing latest snapshot only.", "error");
     }
+}
+
+async function initUserRatingPage() {
+    if (!bookingIdFromPage) {
+        showBanner("rating-banner", "Booking id is required to submit a rating.");
+        return;
+    }
+
+    const form = document.getElementById("rating-form");
+    const scoreField = form.elements.namedItem("rating");
+    const reviewField = form.elements.namedItem("review");
+    const submitButton = document.getElementById("submit-rating-button");
+
+    const bookingResponse = await apiGet(`/api/v1/bookings/${bookingIdFromPage}`);
+    const mechanicResponse = await apiGet(`/api/v1/mechanics/${bookingResponse.data.mechanicId}`);
+    const serviceResponse = await apiGet(`/api/v1/services/${bookingResponse.data.serviceId}`, { auth: false });
+
+    document.getElementById("rating-mechanic-name").textContent = mechanicResponse.data.name;
+    document.getElementById("rating-booking-fare").textContent = `Final fare ${formatCurrency(bookingResponse.data.totalFare)}`;
+    document.getElementById("rating-booking-id").textContent = `Booking #${bookingResponse.data.bookingId}`;
+    document.getElementById("rating-service-name").textContent = serviceResponse.data.name;
+
+    if (bookingResponse.data.status !== "COMPLETED") {
+        showBanner("rating-banner", "You can rate a mechanic only after the booking is completed.");
+        form.style.display = "none";
+        return;
+    }
+
+    if (bookingResponse.data.reviewSubmitted) {
+        try {
+            const reviewResponse = await apiGet(`/api/v1/bookings/${bookingIdFromPage}/review`);
+            scoreField.value = String(reviewResponse.data.rating);
+            reviewField.value = reviewResponse.data.review || "";
+        } catch (error) {
+            // Keep the already-reviewed state even if review fetch fails.
+        }
+        showBanner("rating-banner", "You have already rated this mechanic.", "success");
+        Array.from(form.elements).forEach((element) => {
+            element.disabled = true;
+        });
+        return;
+    }
+
+    form?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        clearBanner("rating-banner");
+        setLoading(submitButton, true);
+        try {
+            await apiSend(`/api/v1/bookings/${bookingIdFromPage}/review`, "POST", {
+                rating: Number(scoreField.value),
+                review: reviewField.value.trim()
+            });
+            showToast("Thanks for rating your mechanic.", "success");
+            window.location.href = "/app/user/home";
+        } catch (error) {
+            showBanner("rating-banner", readApiError(error));
+        } finally {
+            setLoading(submitButton, false);
+        }
+    });
 }
 
 function estimateEta(status) {
