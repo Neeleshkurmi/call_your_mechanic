@@ -16,6 +16,12 @@ public class AuthProperties {
     /** Maximum incorrect OTP submissions before challenge is locked. */
     private int otpMaxAttempts = 5;
 
+    /** When enabled, OTPs are logged for local development instead of sent through Twilio. */
+    private boolean mockSmsEnabled = false;
+
+    /** Optional fixed OTP used only when mock SMS mode is enabled. */
+    private String fixedOtp;
+
     public long getOtpExpirySeconds() {
         return otpExpirySeconds;
     }
@@ -38,5 +44,21 @@ public class AuthProperties {
 
     public void setOtpMaxAttempts(int otpMaxAttempts) {
         this.otpMaxAttempts = otpMaxAttempts;
+    }
+
+    public boolean isMockSmsEnabled() {
+        return mockSmsEnabled;
+    }
+
+    public void setMockSmsEnabled(boolean mockSmsEnabled) {
+        this.mockSmsEnabled = mockSmsEnabled;
+    }
+
+    public String getFixedOtp() {
+        return fixedOtp;
+    }
+
+    public void setFixedOtp(String fixedOtp) {
+        this.fixedOtp = fixedOtp;
     }
 }

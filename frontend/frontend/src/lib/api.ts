@@ -5,7 +5,7 @@ import {
   patchAuthState,
 } from "./auth";
 
-const BASE_URL = "http://192.168.110.180:8080";
+const BASE_URL = "http://localhost:8080";
 
 async function parseBody(response: Response) {
   const text = await response.text();

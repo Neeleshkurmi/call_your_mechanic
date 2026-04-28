@@ -9,7 +9,9 @@ import com.nilesh.cym.entity.VehicleEntity;
 import com.nilesh.cym.entity.enums.BookingStatus;
 import com.nilesh.cym.entity.enums.UserRole;
 import com.nilesh.cym.repository.BookingRepository;
+import com.nilesh.cym.repository.MechanicLocationRepository;
 import com.nilesh.cym.repository.MechanicRepository;
+import com.nilesh.cym.repository.ReviewRepository;
 import com.nilesh.cym.repository.ServiceRepository;
 import com.nilesh.cym.repository.UserRepository;
 import com.nilesh.cym.repository.VehicleRepository;
@@ -38,9 +40,13 @@ class BookingServiceTest {
     @Mock
     private MechanicRepository mechanicRepository;
     @Mock
+    private MechanicLocationRepository mechanicLocationRepository;
+    @Mock
     private VehicleRepository vehicleRepository;
     @Mock
     private ServiceRepository serviceRepository;
+    @Mock
+    private ReviewRepository reviewRepository;
 
     @InjectMocks
     private BookingService bookingService;
@@ -106,6 +112,10 @@ class BookingServiceTest {
         booking.setStatus(status);
         booking.setLatitude(18.52);
         booking.setLongitude(73.85);
+        booking.setTravelDistanceKm(1.0);
+        booking.setTravelCharge(18.0);
+        booking.setServiceCharge(499.0);
+        booking.setTotalFare(517.0);
         return booking;
     }
 }

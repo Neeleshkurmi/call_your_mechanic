@@ -2,6 +2,7 @@ package com.nilesh.cym.config;
 
 import com.nilesh.cym.location.realtime.RedisLocationSubscriber;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -24,11 +25,13 @@ public class RedisConfig {
     private static final String CACHE_PREFIX_VERSION = "cym:v6:";
 
     @Bean
+    @Profile("!dev")
     public MessageListenerAdapter locationEventListener(RedisLocationSubscriber subscriber) {
         return new MessageListenerAdapter(subscriber, "handleMessage");
     }
 
     @Bean
+    @Profile("!dev")
     public RedisMessageListenerContainer redisContainer(
             RedisConnectionFactory connectionFactory,
             MessageListenerAdapter locationEventListener
@@ -37,6 +40,12 @@ public class RedisConfig {
         container.setConnectionFactory(connectionFactory);
         container.addMessageListener(locationEventListener, new PatternTopic("booking:*:location"));
         return container;
+    }
+
+    @Bean
+    @Profile("dev")
+    public CacheManager devCacheManager() {
+        return new ConcurrentMapCacheManager();
     }
 
     @Bean

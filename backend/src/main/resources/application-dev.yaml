@@ -1,6 +1,11 @@
 spring:
   cache:
     type: simple
+  sql:
+    init:
+      mode: always
+  jpa:
+    show-sql: true
 
 springdoc:
   api-docs:
@@ -8,3 +13,8 @@ springdoc:
   swagger-ui:
     enabled: true
     disable-swagger-default-url: true
+
+app:
+  auth:
+    mock-sms-enabled: true
+    fixed-otp: 123456

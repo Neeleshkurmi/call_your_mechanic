@@ -1,0 +1,78 @@
+services:
+  - type: web
+    name: call-your-mechanic-backend
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: render
+      - key: PORT
+        value: 10000
+      - key: DB_HOST
+        fromDatabase:
+          name: call-your-mechanic-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: call-your-mechanic-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: call-your-mechanic-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: call-your-mechanic-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: call-your-mechanic-db
+          property: password
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: call-your-mechanic-redis
+          property: connectionString
+      - key: SECURITY_JWT_SECRET
+        generateValue: true
+      - key: SECURITY_JWT_ACCESS_TOKEN_TTL
+        value: PT2H
+      - key: SECURITY_JWT_REFRESH_TOKEN_TTL
+        value: P30D
+      - key: APP_AUTH_MOCK_SMS_ENABLED
+        value: false
+      - key: SQL_INIT_MODE
+        value: never
+      - key: JPA_DDL_AUTO
+        value: update
+      - key: SPRINGDOC_API_DOCS_ENABLED
+        value: true
+      - key: SPRINGDOC_SWAGGER_UI_ENABLED
+        value: true
+      - key: SMS_ACCOUNTSID
+        sync: false
+      - key: SMS_AUTHTOKEN
+        sync: false
+      - key: SMS_FROMNUMBER
+        sync: false
+
+  - type: keyvalue
+    name: call-your-mechanic-redis
+    plan: starter
+    region: singapore
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+
+databases:
+  - name: call-your-mechanic-db
+    databaseName: call_your_mechanic
+    user: cym_user
+    plan: basic-256mb
+    region: singapore
+    postgresMajorVersion: "16"
+    ipAllowList: []

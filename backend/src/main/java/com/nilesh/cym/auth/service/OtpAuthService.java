@@ -71,12 +71,11 @@ public class OtpAuthService {
 // ... inside the class ...
 
     private void sendSmsViaTwilio(String mobile, String otp) {
-        // These should ideally be moved to application.yaml and injected via @Value
+        if (isBlank(accountSid) || isBlank(authToken) || isBlank(fromNumber)) {
+            throw new IllegalStateException("Twilio SMS credentials are not configured");
+        }
 
-
-//        mobile = "+91" + mobile;
-
-        String message = "Here is your Call Your Mechanic one time password is: " + otp + " don't share it with anyone, Himanshu ko to bilkul mat dena";
+        String message = "Your Call Your Mechanic one-time password is: " + otp + ". Do not share it with anyone.";
         log.info("otp_sms_send_start mobile={}", LogSanitizer.maskMobile(mobile));
 
         Twilio.init(accountSid, authToken);
@@ -130,19 +129,16 @@ public class OtpAuthService {
                 savedChallenge.getExpiresAt(),
                 savedChallenge.getCooldownUntil());
 
-        // FUTURE USE NOT ENABLED FOR NOW
-//        sendSmsViaTwilio(normalizedMobile, otp);
-
-
-        log.info("\n\n" +
-                        "                               \u001B[33;1m >>> OTP: [{}] | MOBILE: [{}] <<<\u001B[0m" +
-                        "\n",
-                otp, LogSanitizer.maskMobile(normalizedMobile));
-
+        if (authProperties.isMockSmsEnabled()) {
+            log.info("\n\n" +
+                            "                               \u001B[33;1m >>> OTP: [{}] | MOBILE: [{}] <<<\u001B[0m" +
+                            "\n",
+                    otp, LogSanitizer.maskMobile(normalizedMobile));
+        } else {
+            sendSmsViaTwilio(normalizedMobile, otp);
+        }
 
         log.info("otp_request_complete mobile={}", LogSanitizer.maskMobile(normalizedMobile));
-
-        // Integrate SMS provider here without logging OTP in plaintext.
     }
 
     @Transactional
@@ -263,6 +259,10 @@ public class OtpAuthService {
     }
 
     private String generateOtp() {
+        if (authProperties.isMockSmsEnabled() && !isBlank(authProperties.getFixedOtp())) {
+            return authProperties.getFixedOtp();
+        }
+
         int upperBound = (int) Math.pow(10, OTP_LENGTH);
         int lowerBound = upperBound / 10;
         int otp = lowerBound + secureRandom.nextInt(upperBound - lowerBound);
@@ -294,5 +294,9 @@ public class OtpAuthService {
 
     private String normalizeMobile(String mobile) {
         return mobile == null ? null : mobile.trim();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

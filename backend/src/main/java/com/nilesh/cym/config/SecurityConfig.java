@@ -49,7 +49,8 @@ public class SecurityConfig {
                             "/app/**",
                             "/css/**",
                             "/js/**",
-                            "/images/**"
+                            "/images/**",
+                            "/actuator/health/**"
                     ).permitAll();
                     auth.requestMatchers("/api/v1/auth/**", "/swagger-ui/index.html", "/ws/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/v1/services/**").permitAll();
@@ -71,7 +72,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://10.0.2.2:*",
                 "http://localhost:*",
-                "http://localhost:8081",
+                "http://localhost:5173",
                 "http://127.0.0.1:*",
                 "https://id-preview--0d0b2749-6fd4-4b84-b1df-383cc6da4bc9.lovable.app",
                 "*"

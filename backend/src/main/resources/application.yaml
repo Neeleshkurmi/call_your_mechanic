@@ -1,41 +1,51 @@
 server:
-  address : 0.0.0.0
+  address: 0.0.0.0
+  port: ${PORT:8080}
 
 spring:
   application:
     name: call-your-mechanic
   datasource:
-    url: jdbc:postgresql://localhost:5432/call-your-mechanic
-    username: postgres
-    password: root
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:call-your-mechanic}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${JPA_DDL_AUTO:update}
     defer-datasource-initialization: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: true
+    show-sql: ${JPA_SHOW_SQL:false}
 
   sql:
     init:
-      mode: always
+      mode: ${SQL_INIT_MODE:never}
   devtools:
     add-properties: false
 
 
   data:
     redis:
-      host: localhost
-      port: 6379
+      url: ${REDIS_URL:redis://localhost:6379}
 
 springdoc:
   api-docs:
-    enabled: true
+    enabled: ${SPRINGDOC_API_DOCS_ENABLED:true}
   swagger-ui:
-    enabled: true
+    enabled: ${SPRINGDOC_SWAGGER_UI_ENABLED:true}
     disable-swagger-default-url: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
 
 
 app:
@@ -43,16 +53,18 @@ app:
     otp-expiry-seconds: 300
     otp-resend-cooldown-seconds: 60
     otp-max-attempts: 5
+    mock-sms-enabled: ${APP_AUTH_MOCK_SMS_ENABLED:false}
+    fixed-otp: ${APP_AUTH_FIXED_OTP:}
 
 # SMS provider
 sms:
-  accountSid: AC50039e27063e1d32436f92a8d04f3780
-  authToken:  62bffff16d7beb369fe7d21cba88c715
-  fromNumber: +1 507 776 5377
+  accountSid: ${SMS_ACCOUNTSID:}
+  authToken: ${SMS_AUTHTOKEN:}
+  fromNumber: ${SMS_FROMNUMBER:}
 
 
 security:
   jwt:
-    secret: e0S8JplmeKf5Sq8hJrPdpc3VbH1wVlAbAzzVjlsdhNr
-    access-token-ttl: PT2H
-    refresh-token-ttl: P30D
+    secret: ${SECURITY_JWT_SECRET:local-dev-only-change-this-secret-key-32chars}
+    access-token-ttl: ${SECURITY_JWT_ACCESS_TOKEN_TTL:PT2H}
+    refresh-token-ttl: ${SECURITY_JWT_REFRESH_TOKEN_TTL:P30D}
